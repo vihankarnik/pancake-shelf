@@ -12,6 +12,7 @@
 
 
 // these objects must be global
+// all global variables-----------------------------------------------------------------------------
 
 GtkBuilder *builder;
 GtkWidget *main_window;
@@ -63,16 +64,20 @@ char clicked_music_filepath[512];
 GtkWidget *slider;
 int music_is_playing;
 
-// function prototypes
+// function prototypes--------------------------------------------------------------------------------
+void homepage_assets_generate();
 void show_homepage();
+void main_widgets_generate();
 
 //Gallery functions--------------------------------------------------------------------------------------
+void gallery_assets_generate();
 void generate_gallery_menu_fixed();
 void generate_camera_images_fixed();
 void a_camera_image_clicked(GtkWidget *button, gpointer i);
 
 
 //Music Player functions-------------------------------------------------------------------------------
+void music_player_assets_generate();
 void music_menu_add_new_folder_button_clicked();
 void music_menu_folder_button_clicked();
 void generate_music_files_fixed();
@@ -94,6 +99,84 @@ gboolean update_main_time_label(gpointer user_data)
     return G_SOURCE_CONTINUE;
 }
 
+
+    //compiling command
+        //gcc app.c -o app $(pkg-config --cflags --libs gtk+-3.0) $(pkg-config --cflags --libs SDL2_mixer) -Wl,--export-all-symbols
+int SDL_main(int argc, char *argv[])
+{
+    //GtkApplication *app;  // this is gtk4 specific
+
+    //app = gtk_application_new("my.first.app", G_APPLICATION_DEFAULT_FLAGS);
+
+
+    gtk_init(NULL, NULL);   //GtkApplication works in gtk4
+    //GError *error = NULL;
+    //builder = gtk_builder_new();
+    builder = gtk_builder_new_from_file("glade.glade"); // initialising builder object
+    if(!builder)
+    {
+        g_printerr("Failed to load builder object. \n");
+        return 1;
+    }
+        //initialising stack
+    stack = gtk_stack_new();
+    //g_error_free(error);
+
+    // homepage code here------------------------------------------------------
+
+    homepage_assets_generate();
+
+    // gallery code here-------------------------------------------------------
+
+    gallery_assets_generate();
+
+
+    // Music player code here--------------------------------------------------
+
+    music_player_assets_generate();
+
+    // main_window and top level code here-------------------------------------
+    main_widgets_generate();
+
+    show_homepage();
+
+    gtk_builder_connect_signals(builder, NULL);
+    gtk_widget_show_all(main_window);
+
+    gtk_main();
+
+
+    // clearing and closing the application------------------------------------
+
+    // Stop the music playback
+    Mix_HaltMusic();
+    // Free the music resource
+    Mix_FreeMusic(music);
+    // Close the audio system
+    Mix_CloseAudio();
+    // Quit the SDL subsystems
+    SDL_Quit();
+    // application has run without any errors
+    return EXIT_SUCCESS;
+
+
+        // once application starts, it makes a new window
+    //g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
+        // this runs the application till we close it
+    //int status = g_application_run(G_APPLICATION(app), 0, NULL);
+        // this releases the reference app
+    //g_object_unref(app);
+
+    //g_signal_connect(window, "destroy", G_CALLBACK(g_main_quit()), NULL);
+    //while(1)
+    //{
+    //    g_main_context_iteration (NULL, TRUE);  // this calls the main function again
+    //}
+
+    //return status;
+}
+
+
 //static void activate(GtkApplication *app)
 //{
 //    window = GTK_WIDGET(gtk_builder_get_object(builder, "main_window"));
@@ -112,105 +195,10 @@ gboolean update_main_time_label(gpointer user_data)
 //    gtk_window_present(GTK_WINDOW(window));
 //}
 
-    //compiling command
-//gcc app.c -o app $(pkg-config --cflags --libs gtk+-3.0) -Wl,--export-all-symbols
-int SDL_main(int argc, char *argv[])
-{
-    //GtkApplication *app;  // this is gtk4 specific
 
-    //app = gtk_application_new("my.first.app", G_APPLICATION_DEFAULT_FLAGS);
+//Gallery functions----------------------------------------------------------------------------------
 
-
-    gtk_init(NULL, NULL);   //GtkApplication works in gtk4
-    //GError *error = NULL;
-    //builder = gtk_builder_new();
-    builder = gtk_builder_new_from_file("glade.glade"); // initialising builder object
-    if(!builder)
-    {
-        g_printerr("Failed to load Glade file. \n");
-        return 1;
-    }
-        //initialising stack
-    stack = gtk_stack_new();
-    //g_error_free(error);
-
-    //gtk_builder_connect_signals(builder, NULL);
-
-    // just in case we need this
-    for(int i = 1; i < 7; i++)
-    {
-        // getting each button and applying rounded borders
-        char buttonname[64];
-        sprintf(buttonname, "icon_button%d", i);
-        main_icon_buttons[i] = GTK_WIDGET(gtk_builder_get_object(builder, buttonname));
-        GtkCssProvider *css_provider = gtk_css_provider_new();
-        gtk_css_provider_load_from_data(css_provider,
-            //".icon_button { border-radius: 25px; background: none; box-shadow: none; border: none;}",    // adds a class which is mentioned in the glad
-            ".icon_button { border-radius: 25px; background: white;}",    // adds a class which is mentioned in the glad
-            -1, NULL);
-        GtkStyleContext *context = gtk_widget_get_style_context((main_icon_buttons[i]));
-        gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(css_provider),
-            GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-
-
-            //adding image to each button
-
-            //TODO
-        //GtkWidget *icon_button_image = gtk_image_new();
-        //char icon_buttonname[64] = "icon_";
-        //strcat(icon_buttonname, buttonname);
-        //icon_button_image = GTK_WIDGET(gtk_builder_get_object(builder, icon_buttonname));
-        //homepage_wallpaper_pixIn = gdk_pixbuf_new_from_file("assets/homepage_wallpaper.jpg", NULL);    // unscaled pixbuf
-        //homepage_wallpaper_pix = gdk_pixbuf_scale_simple(homepage_wallpaper_pixIn, 1000, 800, GDK_INTERP_NEAREST); // scaled pixbuf
-        //gtk_image_set_from_pixbuf(GTK_IMAGE(homepage_wallpaper), homepage_wallpaper_pix);
-
-
-    }
-
-    //gtk_widget_set_name(main_icon_buttons[1], "rounded");
-
-
-
-    main_time_label = GTK_WIDGET(gtk_builder_get_object(builder, "main_time_label"));
-    gtk_widget_set_halign(main_time_label, GTK_ALIGN_CENTER);
-    guint timeout_id = g_timeout_add_seconds(1, update_main_time_label, NULL);
-    //PangoFontDescription *font_desc = pango_font_description_from_string("Sans 32");
-    //gtk_widget_override_font(main_time_label, font_desc);
-
-    //GtkWidget *icon_grid = GTK_WIDGET(gtk_builder_get_object(builder, "icon_grid"));
-    //gtk_widget_set_halign(GTK_WIDGET(icon_grid), GTK_ALIGN_CENTER);
-
-    homepage_wallpaper = gtk_image_new();
-    homepage_wallpaper = GTK_WIDGET(gtk_builder_get_object(builder, "homepage_wallpaper"));
-    homepage_wallpaper_pixIn = gdk_pixbuf_new_from_file("assets/homepage_wallpaper.jpg", NULL);    // unscaled pixbuf
-    homepage_wallpaper_pix = gdk_pixbuf_scale_simple(homepage_wallpaper_pixIn, 1000, 800, GDK_INTERP_NEAREST); // scaled pixbuf
-    gtk_image_set_from_pixbuf(GTK_IMAGE(homepage_wallpaper), homepage_wallpaper_pix);
-
-
-        //gtk_widget_add_css_class(homepage_fixed, "homepage_wallpaper");
-    //GtkCssProvider *css_provider = gtk_css_provider_new();
-    //const gchar *css_data = "homepage_fixed {background-color: red; background-size: cover; background-repeat: no-repeat;}";
-    //const gchar *css_data = "homepage_fixed {background-image: url(\"assets/homepage_wallpaper.jpg\"); background-size: cover; background-repeat: no-repeat;}";
-      //gtk_css_provider_load_from_string(css_provider, css_data);
-    //gtk_css_provider_load_from_data(css_provider, css_data, -1, NULL);
-    //gtk_css_provider_load_from_path(css_provider, "asdf.css", NULL);
-
-    //GtkStyleContext *context = gtk_widget_get_style_context(homepage_fixed);
-    //gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(css_provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-
-
-
-
-
-    // for (int i = 0; i < fileCount; i++) {
-    //     // Create image widget from file
-    //     GtkWidget *image = gtk_image_new();
-    //     pixIn_camera_images_grid = gdk_pixbuf_new_from_file(images_list[i], NULL);    // unscaled pixbuf
-    //     pix_camera_images_grid = gdk_pixbuf_scale_simple(pixIn_camera_images_grid, 176, 176, GDK_INTERP_NEAREST); // scaled pixbuf
-    //     gtk_image_set_from_pixbuf(GTK_IMAGE(image), pix_camera_images_grid);
-    // //     // Attach image to the grid
-    //     gtk_grid_attach(GTK_GRID(camera_images_grid), image, i%5, i/5, 1, 1);
-    // }
+void gallery_assets_generate(){
 
 
     images_list = (char **)malloc(1024*sizeof(char *));
@@ -235,98 +223,7 @@ int SDL_main(int argc, char *argv[])
 
 
 
-
-    /* Music player code begins here------------------------------------------------------*/
-
-    // getting ScrolledWindow and fixed from builder
-    music_menu_scrolled_window = GTK_WIDGET(gtk_builder_get_object(builder, "music_menu_scrolled_window"));
-    music_menu_fixed = GTK_WIDGET(gtk_builder_get_object(builder, "music_menu_fixed")); // assigning gallery menu fixed
-    gtk_container_add(GTK_CONTAINER(music_menu_scrolled_window), GTK_WIDGET(music_menu_fixed));//adding camera images fixed to scroll window
-    music_menu_grid = GTK_WIDGET(gtk_builder_get_object(builder, "music_menu_grid")); // assigning gallery menu fixed
-
-
-    gtk_stack_add_named(GTK_STACK(stack), music_menu_scrolled_window, "music_menu_scrolled_window");
-
-
-    music_files_scrolled_window = GTK_WIDGET(gtk_builder_get_object(builder, "music_files_scrolled_window"));
-    music_files_fixed = GTK_WIDGET(gtk_builder_get_object(builder, "music_files_fixed"));
-    gtk_container_add(GTK_CONTAINER(music_files_scrolled_window), GTK_WIDGET(music_files_fixed));//adding camera images fixed to scroll window
-
-    gtk_stack_add_named(GTK_STACK(stack), music_files_scrolled_window, "music_files_scrolled_window");
-
-
-    music_menu_folders_number = 1;
-    generate_music_files_fixed();
-
-
-
-
-    //music_menu_add_new_folder_button = gtk_button_new();
-    //GtkWidget *music_menu_plus_image = gtk_image_new_from_icon_name("list-add", GTK_ICON_SIZE_BUTTON);
-    //gtk_grid_attach(GTK_GRID(music_menu_grid), music_menu_add_new_folder_button, 1, 0, 1, 1);
-
-    //g_signal_connect(music_menu_add_new_folder_button, "clicked", G_CALLBACK(music_menu_add_new_folder_button_clicked), NULL);
-
-
-    /* main_window creation and important stuff-------------------------------------------*/
-    main_window = GTK_WIDGET(gtk_window_new(GTK_WINDOW_TOPLEVEL));
-    gtk_window_set_default_size(GTK_WINDOW(main_window), 1000, 800);
-
-        //connects destroy signal (close button) to gtk_main_quit (predefined)
-    g_signal_connect(main_window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-
-        //creating a GtkStack that will contain the GtkFixed's of all pages
-    gtk_container_add(GTK_CONTAINER(main_window), stack);
-
-
-        //get all GtkFixed's from builder
-
-    homepage_fixed = GTK_WIDGET(gtk_builder_get_object(builder, "homepage_fixed"));
-        //adding all GtkFixed's to this GtkStack
-
-    gtk_stack_add_named(GTK_STACK(stack), homepage_fixed, "homepage_fixed");
-
-    show_homepage();
-
-    gtk_builder_connect_signals(builder, NULL);
-    gtk_widget_show_all(main_window);
-
-    gtk_main();
-
-
-
-    // Stop the music playback
-    Mix_HaltMusic();
-    // Free the music resource
-    Mix_FreeMusic(music);
-    // Close the audio system
-    Mix_CloseAudio();
-    // Quit the SDL subsystems
-    SDL_Quit();
-    return EXIT_SUCCESS;
-
-
-        // once application starts, it makes a new window
-    //g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
-        // this runs the application till we close it
-    //int status = g_application_run(G_APPLICATION(app), 0, NULL);
-        // this releases the reference app
-    //g_object_unref(app);
-
-    //g_signal_connect(window, "destroy", G_CALLBACK(g_main_quit()), NULL);
-    //while(1)
-    //{
-    //    g_main_context_iteration (NULL, TRUE);  // this calls the main function again
-    //}
-
-    //return status;
 }
-
-
-
-
-//Gallery functions----------------------------------------------------------------------------------
-
 void generate_gallery_menu_fixed()
 {
 
@@ -492,6 +389,42 @@ void a_camera_image_clicked(GtkWidget * button, gpointer data)
 
 
 // music player functions------------------------------------------------------------------------
+
+void music_player_assets_generate(){
+
+    // getting ScrolledWindow and fixed from builder
+    music_menu_scrolled_window = GTK_WIDGET(gtk_builder_get_object(builder, "music_menu_scrolled_window"));
+    music_menu_fixed = GTK_WIDGET(gtk_builder_get_object(builder, "music_menu_fixed")); // assigning gallery menu fixed
+    gtk_container_add(GTK_CONTAINER(music_menu_scrolled_window), GTK_WIDGET(music_menu_fixed));//adding camera images fixed to scroll window
+    music_menu_grid = GTK_WIDGET(gtk_builder_get_object(builder, "music_menu_grid")); // assigning gallery menu fixed
+
+
+    gtk_stack_add_named(GTK_STACK(stack), music_menu_scrolled_window, "music_menu_scrolled_window");
+
+
+    music_files_scrolled_window = GTK_WIDGET(gtk_builder_get_object(builder, "music_files_scrolled_window"));
+    music_files_fixed = GTK_WIDGET(gtk_builder_get_object(builder, "music_files_fixed"));
+    gtk_container_add(GTK_CONTAINER(music_files_scrolled_window), GTK_WIDGET(music_files_fixed));//adding camera images fixed to scroll window
+
+    gtk_stack_add_named(GTK_STACK(stack), music_files_scrolled_window, "music_files_scrolled_window");
+
+
+    music_menu_folders_number = 1;
+    generate_music_files_fixed();
+
+
+
+
+    //music_menu_add_new_folder_button = gtk_button_new();
+    //GtkWidget *music_menu_plus_image = gtk_image_new_from_icon_name("list-add", GTK_ICON_SIZE_BUTTON);
+    //gtk_grid_attach(GTK_GRID(music_menu_grid), music_menu_add_new_folder_button, 1, 0, 1, 1);
+
+    //g_signal_connect(music_menu_add_new_folder_button, "clicked", G_CALLBACK(music_menu_add_new_folder_button_clicked), NULL);
+
+
+
+}
+
 gboolean slider_grabbed = FALSE;
 
 
@@ -637,14 +570,12 @@ void on_slider_changed(GtkWidget* widget, gpointer data) {
         //// taking modulus
         //timediff = (timediff>0) ? timediff : (-timediff);
         //if(timediff < 1){
-        //    printf("no biggie \n");
         //    printf("old is %lf and new is %lf\n", old_position, new_position);
         //    printf("the diff is %lf \n", timediff);
         //    return;
         //}
         //else{
         //    printf("moving cursor \n");
-
         //    // Set the music playback position
         //}
         Mix_SetMusicPosition(new_position);
@@ -955,6 +886,113 @@ void on_music_files_home_button_clicked(){
 
 }
 /* homepage functions --------------------------------------------- */
+
+void homepage_assets_generate(){
+
+    // to apply rounded effect on each button
+    for(int i = 1; i < 7; i++)
+    {
+        // getting each button and applying rounded borders
+        char buttonname[64];
+        sprintf(buttonname, "icon_button%d", i);
+        main_icon_buttons[i] = GTK_WIDGET(gtk_builder_get_object(builder, buttonname));
+        GtkCssProvider *css_provider = gtk_css_provider_new();
+        gtk_css_provider_load_from_data(css_provider,
+            //".icon_button { border-radius: 25px; background: none; box-shadow: none; border: none;}",    // adds a class which is mentioned in the glad
+            ".icon_button { border-radius: 25px; background: white;}",    // adds a class which is mentioned in the glad
+            -1, NULL);
+        GtkStyleContext *context = gtk_widget_get_style_context((main_icon_buttons[i]));
+        gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(css_provider),
+            GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+
+
+            //adding image to each button
+
+            //TODO
+        //GtkWidget *icon_button_image = gtk_image_new();
+        //char icon_buttonname[64] = "icon_";
+        //strcat(icon_buttonname, buttonname);
+        //icon_button_image = GTK_WIDGET(gtk_builder_get_object(builder, icon_buttonname));
+        //homepage_wallpaper_pixIn = gdk_pixbuf_new_from_file("assets/homepage_wallpaper.jpg", NULL);    // unscaled pixbuf
+        //homepage_wallpaper_pix = gdk_pixbuf_scale_simple(homepage_wallpaper_pixIn, 1000, 800, GDK_INTERP_NEAREST); // scaled pixbuf
+        //gtk_image_set_from_pixbuf(GTK_IMAGE(homepage_wallpaper), homepage_wallpaper_pix);
+
+
+    }
+
+    //gtk_widget_set_name(main_icon_buttons[1], "rounded");
+
+
+
+    main_time_label = GTK_WIDGET(gtk_builder_get_object(builder, "main_time_label"));
+    gtk_widget_set_halign(main_time_label, GTK_ALIGN_CENTER);
+    guint timeout_id = g_timeout_add_seconds(1, update_main_time_label, NULL);
+    //PangoFontDescription *font_desc = pango_font_description_from_string("Sans 32");
+    //gtk_widget_override_font(main_time_label, font_desc);
+
+    //GtkWidget *icon_grid = GTK_WIDGET(gtk_builder_get_object(builder, "icon_grid"));
+    //gtk_widget_set_halign(GTK_WIDGET(icon_grid), GTK_ALIGN_CENTER);
+
+    homepage_wallpaper = gtk_image_new();
+    homepage_wallpaper = GTK_WIDGET(gtk_builder_get_object(builder, "homepage_wallpaper"));
+    homepage_wallpaper_pixIn = gdk_pixbuf_new_from_file("assets/homepage_wallpaper.jpg", NULL);    // unscaled pixbuf
+    homepage_wallpaper_pix = gdk_pixbuf_scale_simple(homepage_wallpaper_pixIn, 1000, 800, GDK_INTERP_NEAREST); // scaled pixbuf
+    gtk_image_set_from_pixbuf(GTK_IMAGE(homepage_wallpaper), homepage_wallpaper_pix);
+
+
+        //gtk_widget_add_css_class(homepage_fixed, "homepage_wallpaper");
+    //GtkCssProvider *css_provider = gtk_css_provider_new();
+    //const gchar *css_data = "homepage_fixed {background-color: red; background-size: cover; background-repeat: no-repeat;}";
+    //const gchar *css_data = "homepage_fixed {background-image: url(\"assets/homepage_wallpaper.jpg\"); background-size: cover; background-repeat: no-repeat;}";
+      //gtk_css_provider_load_from_string(css_provider, css_data);
+    //gtk_css_provider_load_from_data(css_provider, css_data, -1, NULL);
+    //gtk_css_provider_load_from_path(css_provider, "asdf.css", NULL);
+
+    //GtkStyleContext *context = gtk_widget_get_style_context(homepage_fixed);
+    //gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(css_provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+
+
+
+
+
+    // for (int i = 0; i < fileCount; i++) {
+    //     // Create image widget from file
+    //     GtkWidget *image = gtk_image_new();
+    //     pixIn_camera_images_grid = gdk_pixbuf_new_from_file(images_list[i], NULL);    // unscaled pixbuf
+    //     pix_camera_images_grid = gdk_pixbuf_scale_simple(pixIn_camera_images_grid, 176, 176, GDK_INTERP_NEAREST); // scaled pixbuf
+    //     gtk_image_set_from_pixbuf(GTK_IMAGE(image), pix_camera_images_grid);
+    // //     // Attach image to the grid
+    //     gtk_grid_attach(GTK_GRID(camera_images_grid), image, i%5, i/5, 1, 1);
+    // }
+
+
+
+
+
+}
+
+void main_widgets_generate(){
+
+
+    main_window = GTK_WIDGET(gtk_window_new(GTK_WINDOW_TOPLEVEL));
+    gtk_window_set_default_size(GTK_WINDOW(main_window), 1000, 800);
+
+        //connects destroy signal (close button) to gtk_main_quit (predefined)
+    g_signal_connect(main_window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+        //creating a GtkStack that will contain the GtkFixed's of all pages
+    gtk_container_add(GTK_CONTAINER(main_window), stack);
+
+
+        //get all GtkFixed's from builder
+
+    homepage_fixed = GTK_WIDGET(gtk_builder_get_object(builder, "homepage_fixed"));
+        //adding all GtkFixed's to this GtkStack
+
+    gtk_stack_add_named(GTK_STACK(stack), homepage_fixed, "homepage_fixed");
+
+
+}
 
 void show_homepage()
 {
