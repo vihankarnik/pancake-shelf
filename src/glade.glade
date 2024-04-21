@@ -2,68 +2,242 @@
 <!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
-  <object class="GtkAdjustment" id="adjustment1">
-    <property name="upper">1</property>
-    <property name="step-increment">1e-08</property>
+  <object class="GtkAdjustment" id="alarm_adjustment1">
+    <property name="upper">12</property>
+    <property name="step-increment">1</property>
+    <property name="page-increment">10</property>
   </object>
-  <object class="GtkWindow" id="music_player_window">
-    <property name="width-request">450</property>
-    <property name="height-request">450</property>
+  <object class="GtkAdjustment" id="alarm_adjustment2">
+    <property name="upper">60</property>
+    <property name="step-increment">1</property>
+    <property name="page-increment">10</property>
+  </object>
+  <object class="GtkFixed" id="clock_custom_fixed">
+    <property name="visible">True</property>
     <property name="can-focus">False</property>
     <child>
-      <object class="GtkFixed" id="music_player_fixed">
+      <object class="GtkButton" id="clock_custom_back_button">
+        <property name="label" translatable="yes">CLOCK</property>
+        <property name="width-request">129</property>
+        <property name="height-request">49</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="receives-default">True</property>
+        <signal name="clicked" handler="on_clock_custom_back_button_clicked" swapped="no"/>
+      </object>
+      <packing>
+        <property name="x">7</property>
+        <property name="y">11</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="final_button">
+        <property name="label" translatable="yes">CUSTOM - SET</property>
+        <property name="width-request">145</property>
+        <property name="height-request">64</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="receives-default">True</property>
+        <signal name="clicked" handler="on_final_button_clicked" swapped="no"/>
+      </object>
+      <packing>
+        <property name="x">281</property>
+        <property name="y">12</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkSpinButton" id="hour_spin">
+        <property name="width-request">100</property>
+        <property name="height-request">53</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="input-purpose">digits</property>
+        <property name="adjustment">alarm_adjustment1</property>
+        <property name="climb-rate">1</property>
+        <property name="value">1</property>
+        <signal name="change-value" handler="on_hour_spin_change_value" swapped="no"/>
+      </object>
+      <packing>
+        <property name="x">10</property>
+        <property name="y">114</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkSpinButton" id="minute_spin">
+        <property name="width-request">100</property>
+        <property name="height-request">53</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="input-purpose">digits</property>
+        <property name="adjustment">alarm_adjustment2</property>
+        <property name="climb-rate">1.0000000002235174</property>
+        <signal name="change-value" handler="on_minute_spin_change_value" swapped="no"/>
+      </object>
+      <packing>
+        <property name="x">142</property>
+        <property name="y">115</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkComboBoxText" id="DAY">
+        <property name="width-request">372</property>
+        <property name="height-request">44</property>
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <child>
-          <object class="GtkImage">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="pixel-size">210</property>
-            <property name="icon-name">audio-x-generic</property>
-            <property name="icon_size">6</property>
-          </object>
-          <packing>
-            <property name="x">120</property>
-            <property name="y">60</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkScale" id="music_player_slider">
-            <property name="width-request">400</property>
-            <property name="height-request">80</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="has-focus">True</property>
-            <property name="adjustment">adjustment1</property>
-            <property name="show-fill-level">True</property>
-            <property name="fill-level">1</property>
-            <property name="round-digits">8</property>
-            <property name="digits">8</property>
-            <property name="draw-value">False</property>
-            <property name="value-pos">left</property>
-            <signal name="value-changed" handler="on_slider_changed" swapped="no"/>
-          </object>
-          <packing>
-            <property name="x">25</property>
-            <property name="y">300</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkButton" id="music_player_play_pause_button">
-            <property name="label" translatable="yes">Pause</property>
-            <property name="width-request">100</property>
-            <property name="height-request">80</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <signal name="clicked" handler="play_pause_clicked" swapped="no"/>
-          </object>
-          <packing>
-            <property name="x">192</property>
-            <property name="y">381</property>
-          </packing>
-        </child>
+        <items>
+          <item translatable="yes">Monday</item>
+          <item translatable="yes">Tuesday</item>
+          <item translatable="yes">Wednesday</item>
+          <item translatable="yes">Thrusday</item>
+          <item translatable="yes">Friday</item>
+          <item translatable="yes">Saturday</item>
+          <item translatable="yes">Sunday</item>
+        </items>
+        <signal name="changed" handler="on_combo_box_changed" swapped="no"/>
       </object>
+      <packing>
+        <property name="x">13</property>
+        <property name="y">220</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkComboBoxText" id="am_pm">
+        <property name="width-request">107</property>
+        <property name="height-request">51</property>
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <items>
+          <item translatable="yes">AM</item>
+          <item translatable="yes">PM</item>
+        </items>
+        <signal name="changed" handler="on_am_pm_changed" swapped="no"/>
+      </object>
+      <packing>
+        <property name="x">276</property>
+        <property name="y">115</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="vibration_button">
+        <property name="label" translatable="yes">Vibration Mode</property>
+        <property name="width-request">217</property>
+        <property name="height-request">58</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="receives-default">True</property>
+      </object>
+      <packing>
+        <property name="x">16</property>
+        <property name="y">290</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkSwitch" id="vibration_switch">
+        <property name="width-request">106</property>
+        <property name="height-request">55</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+      </object>
+      <packing>
+        <property name="x">261</property>
+        <property name="y">290</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkImage" id="hour_tag">
+        <property name="width-request">36</property>
+        <property name="height-request">31</property>
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="stock">gtk-sort-descending</property>
+      </object>
+      <packing>
+        <property name="x">14</property>
+        <property name="y">174</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkLabel" id="minutes_label">
+        <property name="width-request">69</property>
+        <property name="height-request">33</property>
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="label" translatable="yes">Minutes</property>
+      </object>
+      <packing>
+        <property name="x">189</property>
+        <property name="y">173</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkImage" id="minute_tag">
+        <property name="width-request">29</property>
+        <property name="height-request">28</property>
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="stock">gtk-sort-descending</property>
+      </object>
+      <packing>
+        <property name="x">149</property>
+        <property name="y">175</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkLabel" id="hour_label">
+        <property name="width-request">70</property>
+        <property name="height-request">32</property>
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="label" translatable="yes">Hour</property>
+      </object>
+      <packing>
+        <property name="x">53</property>
+        <property name="y">173</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="alarm_sound_button">
+        <property name="label" translatable="yes">Alarm Sound</property>
+        <property name="width-request">293</property>
+        <property name="height-request">45</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="receives-default">True</property>
+      </object>
+      <packing>
+        <property name="x">19</property>
+        <property name="y">380</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkImage" id="alarm_tag">
+        <property name="width-request">60</property>
+        <property name="height-request">42</property>
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="stock">gtk-undo</property>
+      </object>
+      <packing>
+        <property name="x">315</property>
+        <property name="y">382</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkComboBoxText" id="alarm_sound_list">
+        <property name="width-request">357</property>
+        <property name="height-request">56</property>
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <items>
+          <item translatable="yes">Music1</item>
+          <item translatable="yes">Music2</item>
+          <item translatable="yes">Music3</item>
+        </items>
+      </object>
+      <packing>
+        <property name="x">8</property>
+        <property name="y">453</property>
+      </packing>
     </child>
   </object>
   <object class="GtkFixed" id="camera_images_fixed">
@@ -449,6 +623,153 @@
       <placeholder/>
     </child>
   </object>
+  <object class="GtkFixed" id="clock_menu_fixed">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <child>
+      <object class="GtkSwitch" id="alarm_switch1">
+        <property name="width-request">95</property>
+        <property name="height-request">64</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <signal name="state-set" handler="on_alarm_switch1_state_set" swapped="no"/>
+      </object>
+      <packing>
+        <property name="x">259</property>
+        <property name="y">92</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="time_1_set_button">
+        <property name="label" translatable="yes">6 : 00  AM</property>
+        <property name="width-request">150</property>
+        <property name="height-request">69</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="receives-default">True</property>
+      </object>
+      <packing>
+        <property name="x">39</property>
+        <property name="y">90</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="time_2_set_button">
+        <property name="label" translatable="yes">6 : 45  AM</property>
+        <property name="width-request">150</property>
+        <property name="height-request">71</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="receives-default">True</property>
+      </object>
+      <packing>
+        <property name="x">39</property>
+        <property name="y">218</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkSwitch" id="alarm_switch2">
+        <property name="name">switch2</property>
+        <property name="width-request">100</property>
+        <property name="height-request">68</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <signal name="state-set" handler="on_alarm_switch2_state_set" swapped="no"/>
+      </object>
+      <packing>
+        <property name="x">256</property>
+        <property name="y">219</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="time_3_set_button">
+        <property name="label" translatable="yes">7 : 15  AM</property>
+        <property name="width-request">150</property>
+        <property name="height-request">71</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="receives-default">True</property>
+      </object>
+      <packing>
+        <property name="x">39</property>
+        <property name="y">361</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkSwitch" id="alarm_switch3">
+        <property name="name">switch3</property>
+        <property name="width-request">100</property>
+        <property name="height-request">68</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <signal name="state-set" handler="on_alarm_switch3_state_set" swapped="no"/>
+      </object>
+      <packing>
+        <property name="x">256</property>
+        <property name="y">360</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkLabel" id="clock_label">
+        <property name="width-request">100</property>
+        <property name="height-request">41</property>
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="label" translatable="yes">CLOCK</property>
+        <attributes>
+          <attribute name="style" value="italic"/>
+        </attributes>
+      </object>
+      <packing>
+        <property name="x">138</property>
+        <property name="y">13</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton">
+        <property name="label" translatable="yes">Press Done to set Alarm</property>
+        <property name="width-request">315</property>
+        <property name="height-request">47</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="receives-default">True</property>
+      </object>
+      <packing>
+        <property name="x">41</property>
+        <property name="y">474</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="alarm_Done_button">
+        <property name="label" translatable="yes">Done</property>
+        <property name="width-request">89</property>
+        <property name="height-request">54</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="receives-default">True</property>
+        <signal name="clicked" handler="on_alarm_Done_button_clicked" swapped="no"/>
+      </object>
+      <packing>
+        <property name="x">289</property>
+        <property name="y">11</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="clock_menu_fixed_back">
+        <property name="label" translatable="yes">back</property>
+        <property name="width-request">90</property>
+        <property name="height-request">56</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="receives-default">True</property>
+        <signal name="clicked" handler="on_clock_menu_fixed_back_clicked" swapped="no"/>
+      </object>
+      <packing>
+        <property name="x">11</property>
+        <property name="y">11</property>
+      </packing>
+    </child>
+  </object>
   <object class="GtkFixed" id="gallery_menu_fixed">
     <property name="name">Gallery_menu_background</property>
     <property name="width-request">1000</property>
@@ -637,7 +958,7 @@
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="pixel-size">104</property>
-                <property name="icon-name">multimedia-player</property>
+                <property name="icon-name">edit-select-all</property>
                 <property name="icon_size">6</property>
               </object>
             </child>
@@ -664,7 +985,8 @@
               <object class="GtkImage" id="icon_button4_image">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="icon-name">application-x-executable</property>
+                <property name="pixel-size">104</property>
+                <property name="icon-name">printer</property>
                 <property name="icon_size">6</property>
               </object>
             </child>
@@ -691,6 +1013,8 @@
               <object class="GtkImage" id="icon_button5_image">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="pixel-size">104</property>
+                <property name="icon-name">media-tape</property>
                 <property name="icon_size">6</property>
               </object>
             </child>
@@ -717,7 +1041,8 @@
               <object class="GtkImage" id="icon_button6_image">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="stock">gtk-orientation-portrait</property>
+                <property name="pixel-size">104</property>
+                <property name="icon-name">multimedia-player</property>
                 <property name="icon_size">6</property>
               </object>
             </child>
@@ -772,12 +1097,12 @@
         <property name="label" translatable="yes">Camera</property>
         <attributes>
           <attribute name="font-desc" value="Sans 14"/>
-          <attribute name="foreground" value="#ffffffffffff"/>
+          <attribute name="foreground" value="#24241f1f3131"/>
         </attributes>
       </object>
       <packing>
         <property name="x">660</property>
-        <property name="y">498</property>
+        <property name="y">697</property>
       </packing>
     </child>
     <child>
@@ -816,53 +1141,53 @@
     </child>
     <child>
       <object class="GtkLabel">
-        <property name="width-request">100</property>
+        <property name="width-request">89</property>
         <property name="height-request">29</property>
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="label" translatable="yes">temp</property>
+        <property name="label" translatable="yes">Calendar</property>
         <attributes>
           <attribute name="font-desc" value="Sans 14"/>
-          <attribute name="foreground" value="#ffffffffffff"/>
+          <attribute name="foreground" value="#24241f1f3131"/>
         </attributes>
       </object>
       <packing>
-        <property name="x">225</property>
+        <property name="x">257</property>
         <property name="y">697</property>
       </packing>
     </child>
     <child>
       <object class="GtkLabel">
-        <property name="width-request">100</property>
+        <property name="width-request">121</property>
         <property name="height-request">29</property>
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="label" translatable="yes">temp</property>
+        <property name="label" translatable="yes">Alarm Clock</property>
         <attributes>
           <attribute name="font-desc" value="Sans 14"/>
           <attribute name="foreground" value="#ffffffffffff"/>
         </attributes>
       </object>
       <packing>
-        <property name="x">400</property>
+        <property name="x">440</property>
         <property name="y">697</property>
       </packing>
     </child>
     <child>
       <object class="GtkLabel">
-        <property name="width-request">100</property>
+        <property name="width-request">101</property>
         <property name="height-request">29</property>
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="label" translatable="yes">temp</property>
+        <property name="label" translatable="yes">Calculator</property>
         <attributes>
           <attribute name="font-desc" value="Sans 14"/>
           <attribute name="foreground" value="#ffffffffffff"/>
         </attributes>
       </object>
       <packing>
-        <property name="x">600</property>
-        <property name="y">697</property>
+        <property name="x">649</property>
+        <property name="y">498</property>
       </packing>
     </child>
   </object>
@@ -1097,6 +1422,76 @@
     <property name="visible">True</property>
     <property name="can-focus">True</property>
     <property name="shadow-type">in</property>
+    <child>
+      <placeholder/>
+    </child>
+  </object>
+  <object class="GtkAdjustment" id="music_player_slider_adjustment1">
+    <property name="upper">1</property>
+    <property name="step-increment">1e-08</property>
+  </object>
+  <object class="GtkWindow" id="music_player_window">
+    <property name="width-request">450</property>
+    <property name="height-request">450</property>
+    <property name="can-focus">False</property>
+    <child>
+      <object class="GtkFixed" id="music_player_fixed">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <child>
+          <object class="GtkImage">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="pixel-size">210</property>
+            <property name="icon-name">audio-x-generic</property>
+            <property name="icon_size">6</property>
+          </object>
+          <packing>
+            <property name="x">120</property>
+            <property name="y">60</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkScale" id="music_player_slider">
+            <property name="width-request">400</property>
+            <property name="height-request">80</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="has-focus">True</property>
+            <property name="adjustment">music_player_slider_adjustment1</property>
+            <property name="show-fill-level">True</property>
+            <property name="fill-level">1</property>
+            <property name="round-digits">8</property>
+            <property name="digits">8</property>
+            <property name="draw-value">False</property>
+            <property name="value-pos">left</property>
+            <signal name="value-changed" handler="on_slider_changed" swapped="no"/>
+          </object>
+          <packing>
+            <property name="x">25</property>
+            <property name="y">300</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="music_player_play_pause_button">
+            <property name="label" translatable="yes">Pause</property>
+            <property name="width-request">100</property>
+            <property name="height-request">80</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <signal name="clicked" handler="play_pause_clicked" swapped="no"/>
+          </object>
+          <packing>
+            <property name="x">192</property>
+            <property name="y">381</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkWindow" id="window_clock">
+    <property name="can-focus">False</property>
     <child>
       <placeholder/>
     </child>

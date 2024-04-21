@@ -8,6 +8,7 @@
 #include <SDL2/SDL.h>   // for playing music
 #include <SDL2/SDL_mixer.h> // for playing mp3 specifically
 #include <pthread.h>    // for creating parallel processes to play music
+#include <stdbool.h>
 #include <libavformat/avformat.h>   // imports ffmpeg libraries for reading duration of mp3 file
 #define SDL_MAIN_HANDLED
 
@@ -28,6 +29,8 @@ GtkWidget *homepage_fixed;
 GtkWidget *homepage_wallpaper;
 GdkPixbuf *homepage_wallpaper_pixIn;
 GdkPixbuf *homepage_wallpaper_pix;
+GdkPixbuf *homepage_icon_button_pixIn;
+GdkPixbuf *homepage_icon_button_pix;
 
 //gallery variables-----------------------------------------------------------------------------------
 GtkWidget *camera_images_fixed;
@@ -65,7 +68,97 @@ char clicked_music_filepath[512];
 GtkWidget *music_player_slider;
 int music_is_playing;
 
+
+//Alarm variables--------------------------------------------------------------
+
+typedef void (*SwitchFunction)(GtkWidget*);
+SwitchFunction switch_functions[3];
+// All global variables for clock page 1
+GtkWidget *window_clock;                            //window 1 for general timings
+GtkWidget *clock_main_fixed_back ;
+GtkWidget *clock_menu_fixed;
+GtkWidget **alarm_button_stored;                            // varible frame set on the window named frame1
+
+GtkWidget *time_1_set_button;                    // widgets defined for specific tasks - time1 - constant in nature
+
+GtkWidget *time_2_set_button;                  // value of conastant time 2
+
+GtkWidget *time_3_set_button;                // value3 of const time
+
+GtkWidget *custom_set_button;                // ustom button to flip the new window over older one for user to set time based on his wish
+
+GtkWidget *alarm_switch1;                          // on /off for activate and deactivate the constant function s of time set1 ;
+
+GtkWidget *alarm_switch2;                              // on /off for activate and deactivate the constant function s of time set2 ;
+
+GtkWidget *alarm_switch3;                           // on /off for activate and deactivate the constant function s of time set3 ;
+
+GtkWidget *clock_label;                         // header name of file - just  a noattion used by label feature
+
+GtkWidget *alarm_Done_button ;
+
+
+                          // declaring a builder for window and frames to work accordingly in terms of signaling and coordinating over each other
+
+// All global variables for custom page
+
+
+
+
+
+GtkWidget *clock_custom_fixed;
+
+GtkWidget *clock_header;              // header just as a widget for representation ,
+
+GtkWidget *final_button;             //  used to represent custom mode on for clock
+
+GtkWidget *hour_spin;           // to control hour value
+
+GtkWidget *minute_spin;         // to ccontrol minute 
+
+GtkWidget *DAY;                // to select dauy to set for - an alarm 
+
+GtkWidget *am_pm;             // am_ pm slection 
+ 
+GtkWidget *vibration_button;           // use to have a beep sound notification 
+
+GtkWidget *vibration_switch;        // to make vihbration feature on / off based on users wish
+
+GtkWidget *hour_tag;            // label by using gk image feature 
+
+GtkWidget *minute_label;    // label used for making minute feature 
+
+GtkWidget *minute_tag;         
+
+GtkWidget *hour_label;
+GtkWidget *clock_stack ;
+GtkWidget *alarm_sound_button;          // to make ringotnes be possible to play and set for an alarm 
+GtkAdjustment *alarm_adjustment1;
+GtkAdjustment *alarm_adjustment2;
+GtkWidget *alarm_tag;
+
+GtkWidget *alarm_sound_list;          // list of option for music 
+char AM_set[3] = ("AM");              // varible for am 
+ 
+int next_day ;
+int flag_custom = 0 ;
+int diff_day_code;
+const gchar *am_pm_value ;
+const gchar *DAY_value ;
+int hour_value ;
+int minute_value ;
+int currentHour ;
+int currentMinute ;
+
+
+// global variable for alarm music 
+Mix_Music* alarm_music;
+Mix_Chunk* song1 = NULL;
+Mix_Chunk* song2 = NULL;
+
+
 // function prototypes--------------------------------------------------------------------------------
+gboolean update_main_time_label(gpointer user_data);
 void homepage_assets_generate();
 void show_homepage();
 void main_widgets_generate();
@@ -83,26 +176,56 @@ void music_menu_add_new_folder_button_clicked();
 void music_menu_folder_button_clicked();
 void generate_music_files_fixed();
 
-gboolean update_main_time_label(gpointer user_data)
-{
-    time_t rawtime;
-    struct tm *timeinfo;
 
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
+//Alarm functions--------------------------------------------------------------
 
-    char buffer[80];
-    strftime(buffer, sizeof(buffer), "%I:%M:%S %p", timeinfo);
+int alarm_assets_generate();
+int convertTo24Hour(int hour, const char* am_pm);
+// used to ensure calculation with 24 hours flipping to 12 in terms of am _pm
+int timeDifferenceInSeconds(int wakeHour, int wakeMinute, const char* am_pm, int diff_day_code);
+// final state - initial state
+void current_time();
+// to detect current time for diff calcultaion
+int dayToCaseNo(const char *day);
+// picking the wish of user set by , and feeding numbers for days sleection in the code
+void setAlarm(int seconds, int wakeHour, int wakeMinute, const char *am_pm);
+// to make a confirmation call for the alsrm to be set successfully
+void on_alarm_switch1_state_set(GtkWidget *b);
+//on/off for 6.00 am
+void on_alarm_switch2_state_set(GtkWidget *b);
+// on/ off for 6:45 am
+void on_alarm_switch3_state_set(GtkWidget *b);
+// on /off for 7:15 am
+void on_custom_toggled();
+// call command for custom mode to be on
+int on_hour_spin_button();
+// to set hours value for spin approach
+int on_minute_spin_button();
+// same for minutes even 
+void on_combo_box_changed(GtkComboBox *combo_box, gpointer user_data);
+// to pick text data from the option the user chose by clciking on it 
+void on_clock_toggled();
+// to call clock app form the main menu 
+void on_Done_clicked(GtkButton *b);
+// to set all changes finally to call for alarm set
+// void on_final_button_clicked(GtkButton *button, gpointer user_data) ;
+void on_alarm_Done_button_clicked(GtkButton *button, gpointer user_data);
+gboolean process_switch_states(gpointer user_data);
+// to process the switches current condition to be fedded in code
+void set_spin_button_values(int *hour, int *minute);
+gboolean on_window_custom_delete_event(GtkWidget *widget, GdkEvent *event, gpointer user_data);
+gboolean alarm_callback(gpointer data);
+typedef void (*SwitchFunction)(GtkWidget*);
+void on_time_set_button_clicked(GtkWidget *button_set, gpointer button_num);
+void *load_and_play_music(void *selected_sound_ptr) ;
+gboolean timer_callback(gpointer data)  ;
+void on_alarm_end() ;
 
 
-    gtk_label_set_text(GTK_LABEL(main_time_label), buffer);
-        // this allows the function to be called repeatedly
-    return G_SOURCE_CONTINUE;
-}
 
 
     //compiling command
-        //gcc app.c -o app $(pkg-config --cflags --libs gtk+-3.0) $(pkg-config --cflags --libs SDL2_mixer) -Wl,--export-all-symbols
+        //gcc susdurationprinter.c -o app $(pkg-config --cflags --libs gtk+-3.0) $(pkg-config --cflags --libs SDL2_mixer) -Wl,--export-all-symbols -lavformat -lavcodec -lavutil -lswresample
 int SDL_main(int argc, char *argv[])
 {
     //GtkApplication *app;  // this is gtk4 specific
@@ -135,6 +258,16 @@ int SDL_main(int argc, char *argv[])
     // Music player code here--------------------------------------------------
 
     music_player_assets_generate();
+
+
+    // Alarm code here---------------------------------------------------------
+
+
+    alarm_assets_generate();
+
+
+
+
 
     // main_window and top level code here-------------------------------------
     main_widgets_generate();
@@ -199,7 +332,8 @@ int SDL_main(int argc, char *argv[])
 
 //Gallery functions----------------------------------------------------------------------------------
 
-void gallery_assets_generate(){
+void gallery_assets_generate()
+{
 
 
     images_list = (char **)malloc(1024*sizeof(char *));
@@ -391,7 +525,8 @@ void a_camera_image_clicked(GtkWidget * button, gpointer data)
 
 // music player functions------------------------------------------------------------------------
 
-void music_player_assets_generate(){
+void music_player_assets_generate()
+{
 
     // getting ScrolledWindow and fixed from builder
     music_menu_scrolled_window = GTK_WIDGET(gtk_builder_get_object(builder, "music_menu_scrolled_window"));
@@ -430,8 +565,10 @@ gboolean slider_grabbed = FALSE;
 
 
 // Function to toggle play/pause state
-void play_pause_clicked(GtkButton *music_player_play_pause_button, gpointer data) {
-    if (isPaused) {
+void play_pause_clicked(GtkButton *music_player_play_pause_button, gpointer data)
+{
+    if (isPaused)
+    {
         Mix_ResumeMusic();
         isPaused = 0;
         gtk_button_set_label(music_player_play_pause_button, "Pause");
@@ -441,7 +578,8 @@ void play_pause_clicked(GtkButton *music_player_play_pause_button, gpointer data
         gtk_button_set_label(music_player_play_pause_button, "Play");
     }
 }
-void onDestroy(GtkWidget *widget, gpointer data) {
+void onDestroy(GtkWidget *widget, gpointer data)
+{
     music_is_playing = 0;
     gtk_widget_destroy(music_player_slider);
     // Stop the music playback
@@ -461,18 +599,21 @@ void onDestroy(GtkWidget *widget, gpointer data) {
     //gtk_main_quit();
 }
 
-void *audio_parallel_thread(void *arg){
+void *audio_parallel_thread(void *arg)
+{
 
     music_is_playing = 1;
 
     // Initialize SDL with audio support
-    if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+    if (SDL_Init(SDL_INIT_AUDIO) < 0)
+    {
         printf("SDL initialization failed: %s\n", SDL_GetError());
         return NULL;
     }
 
     // Initialize SDL_mixer with clearer error handling
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 256) < 0) {
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 256) < 0)
+    {
         printf("SDL_mixer initialization failed: %s\n", Mix_GetError());
         SDL_Quit();
         return NULL;
@@ -480,7 +621,8 @@ void *audio_parallel_thread(void *arg){
 
     // Load the MP3 file with a valid path
     Mix_Music* music = Mix_LoadMUS(clicked_music_filepath);
-    if (!music) {
+    if (!music)
+    {
         printf("Failed to load MP3: %s\n", Mix_GetError());
         Mix_CloseAudio();
         SDL_Quit();
@@ -488,7 +630,8 @@ void *audio_parallel_thread(void *arg){
     }
 
     // Play the music, handling potential errors
-    if (Mix_PlayMusic(music, -1) < 0) {
+    if (Mix_PlayMusic(music, -1) < 0)
+    {
         printf("Failed to play music: %s\n", Mix_GetError());
         Mix_FreeMusic(music);
         Mix_CloseAudio();
@@ -497,7 +640,8 @@ void *audio_parallel_thread(void *arg){
     }
 
     // Wait for the music to finish or be paused/stopped
-    while (Mix_PlayingMusic()) {
+    while (Mix_PlayingMusic())
+    {
         SDL_Delay(100);
     }
 
@@ -513,11 +657,13 @@ void *audio_parallel_thread(void *arg){
 
 }
 // Audio callback function
-void audioCallback(void *userdata, Uint8 *stream, int len) {
+void audioCallback(void *userdata, Uint8 *stream, int len)
+{
     SDL_memset(stream, 0, len); // Clear the audio buffer
 }
 
-gboolean update_music_progress_slider(void *data){
+gboolean update_music_progress_slider(void *data)
+{
     //SDL_AudioSpec audioSpec;
     //SDL_AudioDeviceID audioDevice;
     //    // Set up the audio specifications
@@ -530,7 +676,8 @@ gboolean update_music_progress_slider(void *data){
     //audioDevice = SDL_OpenAudioDevice(NULL, 0, &audioSpec, NULL, 0);
     //SDL_PauseAudioDevice(audioDevice, 1); //a tiny pause to avoid race conditions
     //if(music_is_playing && !slider_grabbed){
-    if(music_is_playing){
+    if(music_is_playing)
+    {
         // Get the current position of the music playback in milliseconds
         double current_position = Mix_GetMusicPosition(music);
 
@@ -555,9 +702,11 @@ gboolean update_music_progress_slider(void *data){
 }
 
 // Function to handle slider value changes
-void on_slider_changed(GtkWidget* widget, gpointer data) {
+void on_slider_changed(GtkWidget* widget, gpointer data)
+{
     //if (music_is_playing && slider_grabbed) {
-    if (music_is_playing) {
+    if (music_is_playing)
+    {
 
         // Get the value of the slider
         double slider_value = gtk_range_get_value(GTK_RANGE(widget));
@@ -571,7 +720,8 @@ void on_slider_changed(GtkWidget* widget, gpointer data) {
         //double timediff = new_position - old_position;
         //// taking modulus
         //timediff = (timediff>0) ? timediff : (-timediff);
-        //if(timediff < 1){
+        //if(timediff < 1)
+        //{
         //    printf("old is %lf and new is %lf\n", old_position, new_position);
         //    printf("the diff is %lf \n", timediff);
         //    return;
@@ -583,21 +733,25 @@ void on_slider_changed(GtkWidget* widget, gpointer data) {
         Mix_SetMusicPosition(new_position);
     }
 }
-//void slider_pressed(GtkRange *range, GtkScrollType scroll, gdouble value, gpointer user_data){
+//void slider_pressed(GtkRange *range, GtkScrollType scroll, gdouble value, gpointer user_data)
+//{
 //    slider_grabbed = TRUE;
 //}
-//void slider_released(GtkRange *range, GtkScrollType scroll, gdouble value, gpointer user_data){
+//void slider_released(GtkRange *range, GtkScrollType scroll, gdouble value, gpointer user_data)
+//{
 //    slider_grabbed = FALSE;
 //}
 
-void on_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data){
+void on_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data)
+{
     GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
     GtkTreeIter iter;
     //char music_directory[128];
 
 
     // Get the iter associated with the clicked row
-    if (gtk_tree_model_get_iter(model, &iter, path)) {
+    if (gtk_tree_model_get_iter(model, &iter, path))
+    {
         // Now you can extract data from the model using the iter
         // For example, you can get the text of the first column
         gchar *filename;
@@ -659,17 +813,20 @@ void on_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColu
 }
 
 char duration_full[64];
-void get_music_file_duration(char *music_file_path){
+void get_music_file_duration(char *music_file_path)
+{
 
     avformat_network_init();
 
     AVFormatContext *format_ctx = NULL;
-    if (avformat_open_input(&format_ctx, music_file_path, NULL, NULL) != 0) {
+    if (avformat_open_input(&format_ctx, music_file_path, NULL, NULL) != 0)
+    {
         printf("Error: Couldn't open input file\n");
         return ;
     }
 
-    if (avformat_find_stream_info(format_ctx, NULL) < 0) {
+    if (avformat_find_stream_info(format_ctx, NULL) < 0)
+    {
         printf("Error: Couldn't find stream information\n");
         avformat_close_input(&format_ctx);
         return ;
@@ -693,7 +850,8 @@ void get_music_file_duration(char *music_file_path){
 
 }
 
-void generate_music_files_fixed(){
+void generate_music_files_fixed()
+{
 
 
     char *user_profile = getenv("USERPROFILE"); // gets the system variables %USERPROFILE% (only in windows)
@@ -814,13 +972,15 @@ void generate_music_files_fixed(){
 
 }
 
-void on_music_menu_button1_clicked(GtkWidget *music_menu_button1){
+void on_music_menu_button1_clicked(GtkWidget *music_menu_button1)
+{
     generate_music_files_fixed();
 
 
     gtk_stack_set_visible_child_name(GTK_STACK(stack), "music_files_scrolled_window");
 }
-void music_menu_add_new_folder_button_clicked(){
+void music_menu_add_new_folder_button_clicked()
+{
     //GtkWidget *dialog = gtk_file_chooser_dialog_new(
     //    "Select Folder",                                // Dialog title
     //    GTK_WINDOW(main_window),   // Parent window
@@ -834,7 +994,8 @@ void music_menu_add_new_folder_button_clicked(){
 
     //// Check the response
     //gchar *folder_path;
-    //if (response == GTK_RESPONSE_ACCEPT) {
+    //if (response == GTK_RESPONSE_ACCEPT)
+    //{
     //    // Get the selected folder path
     //    folder_path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 
@@ -922,32 +1083,558 @@ void music_menu_add_new_folder_button_clicked(){
     //gtk_stack_set_visible_child_name(GTK_STACK(stack), "music_menu_scrolled_window");
 }
 
-void music_menu_folder_button_clicked(GtkWidget *music_menu_folder_button, gpointer data){
+void music_menu_folder_button_clicked(GtkWidget *music_menu_folder_button, gpointer data)
+{
     printf("THE BUTTON PRESSED IS FOR %s", data);
     ;
 }
 
-void on_music_menu_back_button_clicked(){
+void on_music_menu_back_button_clicked()
+{
     gtk_stack_set_visible_child_name(GTK_STACK(stack), "homepage_fixed");
 
 }
-void on_music_menu_home_button_clicked(){
+void on_music_menu_home_button_clicked()
+{
     gtk_stack_set_visible_child_name(GTK_STACK(stack), "homepage_fixed");
 
 }
 
-void on_music_files_back_button_clicked(){
+void on_music_files_back_button_clicked()
+{
     gtk_stack_set_visible_child_name(GTK_STACK(stack), "music_menu_scrolled_window");
 
 }
 
-void on_music_files_home_button_clicked(){
+void on_music_files_home_button_clicked()
+{
     gtk_stack_set_visible_child_name(GTK_STACK(stack), "homepage_fixed");
 
 }
+
+// alarm functions-------------------------------------------------------------
+
+int alarm_assets_generate()
+{
+
+    alarm_button_stored =(GtkWidget **)malloc(sizeof(GtkWidget *));
+        // declaring plugin for window for clock 
+    clock_custom_fixed = GTK_WIDGET(gtk_builder_get_object(builder, "clock_custom_fixed"));
+    clock_menu_fixed= GTK_WIDGET(gtk_builder_get_object(builder, "clock_menu_fixed"));
+
+    gtk_stack_add_named(GTK_STACK(stack),clock_menu_fixed,"clock_menu_fixed");
+    gtk_stack_add_named(GTK_STACK(stack),clock_custom_fixed,"clock_custom_fixed");
+
+    on_clock_toggled();
+    g_signal_connect(time_1_set_button,"clicked", G_CALLBACK(on_time_set_button_clicked),GINT_TO_POINTER(1));
+    g_signal_connect(time_2_set_button, "clicked", G_CALLBACK(on_time_set_button_clicked),GINT_TO_POINTER(2));
+    g_signal_connect(time_3_set_button, "clicked", G_CALLBACK(on_time_set_button_clicked), GINT_TO_POINTER(3));
+
+        
+  
+    if (SDL_Init(SDL_INIT_AUDIO) < 0)
+    {
+        g_print("SDL initialization failed: %s\n", SDL_GetError());
+        return -1;
+    }
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+    {
+        g_print("SDL_mixer initialization failed: %s\n", Mix_GetError());
+        SDL_Quit();
+        return -1;
+    }
+     g_signal_connect(alarm_sound_list, "changed", G_CALLBACK(timer_callback), NULL);
+
+
+
+    // on_custom_toggled() ;
+
+
+
+}
+
+// GtkWidget *switches[3] ;
+// int num_switches = G_N_ELEMENTS(switches);
+// to count net switches in the list 
+int timeDifferenceInSeconds(int wakeHour, int wakeMinute, const char* am_pm, int diff_day_code )
+{
+    time_t now;
+    // current time 
+    struct tm *currentTime;
+    // structure for time 
+    time(&now);  // Get current time
+    currentTime = localtime(&now);
+
+    currentHour = currentTime->tm_hour  ;
+    // for setting the base to current time vs variation in time 
+    currentMinute = currentTime->tm_min ;
+
+    int currentSecond = currentTime->tm_sec ;
+// same varition fo rminute even
+    wakeHour = convertTo24Hour(wakeHour, am_pm);
+    // to convert the time to 24 -> 12 hour balance system 
+    int wakeTimeInSeconds = (wakeHour + diff_day_code) * 3600 + wakeMinute * 60;
+    // feature to find difference of time based on the day selected 
+    int currentTimeInSeconds = currentHour * 3600 + currentMinute * 60;
+
+    int difference = wakeTimeInSeconds - currentTimeInSeconds;
+    if (difference < 0)
+    {
+        difference += 24 * 3600;  // If wake-up time is earlier than current time, add a day
+    }
+    return (difference - currentSecond);
+}
+
+
+void on_clock_toggled(GtkWidget *)
+{
+    // when clock app is clicked , 
+    gboolean state = true;
+    if (state)
+    {
+         
+        // creating a new builder for clock window  
+
+      
+        // improting plugins firm the gtk library in c 
+
+         
+
+        // widget declatred for settin g frame for first clock app ;
+
+        time_1_set_button = GTK_WIDGET(gtk_builder_get_object(builder, "time_1_set_button"));
+        // just  a button denoting the time value we used generally 
+
+        time_2_set_button = GTK_WIDGET(gtk_builder_get_object(builder, "time_2_set_button"));
+        alarm_switch1 = GTK_WIDGET(gtk_builder_get_object(builder, "alarm_switch1"));
+        // alarm_switch1 to set alarm to 6.00 Am
+        clock_main_fixed_back = GTK_WIDGET(gtk_builder_get_object(builder, "clock_main_fixed_back"));
+        alarm_switch2 = GTK_WIDGET(gtk_builder_get_object(builder, "alarm_switch2"));
+        // switch 2 to set alarm to 6.45 Am
+
+        alarm_switch3 = GTK_WIDGET(gtk_builder_get_object(builder, "alarm_switch3"));
+        // switch 3 to set alarm to 7:15 Am 
+
+        time_3_set_button = GTK_WIDGET(gtk_builder_get_object(builder, "time_3_set_button"));
+
+        custom_set_button = GTK_WIDGET(gtk_builder_get_object(builder, "custom_set_button"));
+       // to guide the user to use that user interface ;
+
+        clock_label = GTK_WIDGET(gtk_builder_get_object(builder, "clock_label"));
+        // headtag 
+	    alarm_Done_button = GTK_WIDGET(gtk_builder_get_object(builder, "alarm_Done_button"));
+        // to finalize the command after user has enetered its options 
+
+	   
+        // command to intialize window_clock to work on ;
+ 	    
+    }
+}
+void on_alarm_Done_button_clicked(GtkButton *button, gpointer user_data)
+{
+    // Retrieve the states of all three switches
+    gboolean state_switch1 = gtk_switch_get_active(GTK_SWITCH(alarm_switch1));
+    // TO  detect the current condition of alarm_switch1 - either true or false ;
+
+    gboolean state_switch2 = gtk_switch_get_active(GTK_SWITCH(alarm_switch2));
+    // TO  detect the current condition of alarm_switch2 - either true or false ;
+
+    gboolean state_switch3 = gtk_switch_get_active(GTK_SWITCH(alarm_switch3));
+    // TO  detect the current condition of alarm_switch3 - either true or false ;
+
+    // Call respective functions based on the states of the switches
+    if (state_switch1)
+    {
+        // Call function for switch 1
+         int timediff1 = timeDifferenceInSeconds(hour_value,minute_value,am_pm_value,diff_day_code);
+        setAlarm(timediff1,hour_value,minute_value,am_pm_value);
+    }
+    if (state_switch2)
+    {
+        // Call function for switch 2
+        int timediff2 = timeDifferenceInSeconds(hour_value,minute_value,am_pm_value,diff_day_code);
+           setAlarm(timediff2,hour_value,minute_value,am_pm_value);
+
+    }
+    if (state_switch3)
+    {
+        // Call function for switch 3
+         int timediff3 = timeDifferenceInSeconds(hour_value,minute_value,am_pm_value,diff_day_code);
+           setAlarm(timediff3,hour_value,minute_value,am_pm_value);
+
+
+    }
+
+}
+
+
+
+void on_custom_toggled()
+{
+    gboolean state = true ;
+    if (state)
+    {
+       
+       
+        // builder intialized and assigned to its file to read the plugins 
+        // builder has function of reading data from the specified file and interpreting the plugins assigned 
+
+        // gtk_builder_add_from_file(builder, "custom_mode.glade", NULL);
+
+
+       
+       // connecting the plugins for window destroy command once eiteher the user click cross button or any other 
+       // spot of the empty window 
+
+        
+       //connecting builder to its signl for getting invoked once its required after window intialization 
+
+     
+        clock_header = GTK_WIDGET(gtk_builder_get_object(builder, "clock_custom_back_button"));
+
+        final_button = GTK_WIDGET(gtk_builder_get_object(builder, "final_button"));
+
+        hour_spin = GTK_WIDGET(gtk_builder_get_object(builder, "hour_spin"));
+
+
+        minute_spin = GTK_WIDGET(gtk_builder_get_object(builder, "minute_spin"));
+
+        DAY = GTK_WIDGET(gtk_builder_get_object(builder, "DAY"));
+       
+         alarm_adjustment1 = gtk_spin_button_get_adjustment(GTK_SPIN_BUTTON(hour_spin));
+        alarm_adjustment2 = gtk_spin_button_get_adjustment(GTK_SPIN_BUTTON(minute_spin));
+
+        am_pm = GTK_WIDGET(gtk_builder_get_object(builder, "am_pm"));
+
+        vibration_button = GTK_WIDGET(gtk_builder_get_object(builder, "vibration_button"));
+
+        vibration_switch = GTK_WIDGET(gtk_builder_get_object(builder, "vibration_switch"));
+
+        hour_tag = GTK_WIDGET(gtk_builder_get_object(builder, "hour_tag"));
+
+        minute_label = GTK_WIDGET(gtk_builder_get_object(builder, "minute_label"));
+
+        minute_tag = GTK_WIDGET(gtk_builder_get_object(builder, "minute_tag"));
+
+        hour_label = GTK_WIDGET(gtk_builder_get_object(builder, "hour_label"));
+
+        alarm_sound_button = GTK_WIDGET(gtk_builder_get_object(builder, "alarm_sound_button"));
+
+        alarm_tag = GTK_WIDGET(gtk_builder_get_object(builder, "alarm_tag"));
+
+        alarm_sound_list = GTK_WIDGET(gtk_builder_get_object(builder, "alarm_sound_list"));
+       
+
+        
+    }
+}
+gboolean on_window_custom_delete_event(GtkWidget *widget, GdkEvent *event, gpointer user_data)
+{
+    // Hide the window instead of destroying it
+    gtk_widget_hide(widget);
+    // Return TRUE to indicate that the event has been handled
+    return TRUE;
+}
+
+void on_final_button_clicked(GtkButton *button, gpointer user_data)
+{
+          
+        alarm_adjustment1 = gtk_spin_button_get_adjustment(GTK_SPIN_BUTTON(hour_spin));
+        // thsi is a feature that allows us to read - current value from the spin button itself  
+        alarm_adjustment2 = gtk_spin_button_get_adjustment(GTK_SPIN_BUTTON(minute_spin));
+        // same for this even 
+        hour_value = gtk_adjustment_get_value(alarm_adjustment1);
+        // save the vlue to varible hour_value 
+        minute_value = gtk_adjustment_get_value(alarm_adjustment2);
+        // same for minute even 
+        am_pm_value = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(am_pm));
+
+        DAY_value = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(DAY));
+        // if loop for checking that all the data required is feed or not 
+        if (am_pm_value == NULL || DAY_value == NULL)
+        {
+        g_print("Please fill up all the required options first.\n");
+        return;
+        }
+
+         next_day = dayToCaseNo(DAY_value); // generate the code or case no for next day - selected by the user 
+
+        time_t t = time(NULL);  
+        // function to invoke current time from the calender and NULL is used here beacuse , we arent interested in 
+        // in chnaging the timezone feature of it now ;
+        struct tm *tm = localtime(&t);
+
+        int current_day = tm->tm_wday ;
+        
+        
+        // the diff of day codes = diff_day_code 
+        if((next_day - current_day)>=1)
+        {
+        diff_day_code = next_day - current_day - 1  ;
+        }
+        else if((next_day - current_day)<0)
+        {
+            diff_day_code = 6 - abs(next_day - current_day);
+        }
+        else if((next_day - current_day)==0)
+        {
+            diff_day_code = 0;
+        }
+
+       
+
+        // int z = timeDifferenceInSeconds(hour_value, minute_value,am_pm_value, diff_day_code);
+        char *label=(char *)malloc(20*sizeof(char));
+        sprintf(label, "%02d:%02d %s", hour_value,minute_value,am_pm_value);
+        gtk_button_set_label(GTK_BUTTON(alarm_button_stored[0]), label);
+        // setAlarm(z, hour_value, minute_value,am_pm_value);
+
+        gtk_stack_set_visible_child_name(GTK_STACK(stack),"clock_menu_fixed");
+
+       
+}
+void set_spin_button_values(int *hour, int *minute)
+{
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(hour_spin), *hour);
+    
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(minute_spin), *minute);
+}
+
+
+int convertTo24Hour(int hour, const char* am_pm)
+{
+    if (strcmp(am_pm, "AM") == 0)
+    {
+        if (hour == 12)
+        {
+            return 0; // 12 AM is 0 hour
+        } else {
+            return hour;
+        }
+    } else { // PM
+        if (hour == 12)
+        {
+            return 12; // 12 PM remains 12
+        } else {
+            return hour + 12; // Add 12 to the hour for PM
+        }
+    }
+}
+
+
+int dayToCaseNo(const char *day)
+{
+    char Day[10];
+    strcpy(Day, day);
+    // comapring day to each str , and return the code for it ;
+    if (strcmp(Day, "Sunday") == 0)
+    {
+        return 0;
+    } else if (strcmp(Day, "Monday") == 0)
+    {
+        return 1;
+    } else if (strcmp(Day, "Tuesday") == 0)
+    {
+        return 2;
+    } else if (strcmp(Day, "Wednesday") == 0)
+    {
+        return 3;
+    } else if (strcmp(Day, "Thursday") == 0)
+    {
+        return 4;
+    } else if (strcmp(Day, "Friday") == 0)
+    {
+        return 5;
+    } else if (strcmp(Day, "Saturday") == 0)
+    {
+        return 6;
+    } 
+    return -1; // Invalid day
+}
+
+gboolean timer_callback(gpointer data)
+{
+    // Check if alarm_music is already playing
+    if (Mix_PlayingMusic())
+    {
+        return FALSE; // alarm_Music is still playing, don't start a new instance
+    }
+
+    // Get the selected sound file from the combo box
+    const gchar *selected_sound = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(alarm_sound_list));
+   
+    if (!selected_sound)
+    {
+        g_print("No sound selected!\n");
+        return FALSE;
+    }
+     
+
+    // Create a thread to load and play music
+    pthread_t alarm_music_thread;
+    pthread_create(&alarm_music_thread, NULL, load_and_play_music, (void *)selected_sound);
+
+
+    // Construct the filename of the MP3 file
+    // gchar *filename = g_strdup_printf("%s.mp3", selected_sound);
+
+
+
+    // // Load the selected sound file
+    // alarm_music = Mix_LoadMUS(filename);
+    // g_free(filename);
+    // if (!alarm_music)
+    // {
+    //     g_print("Failed to load alarm_music: %s\n", Mix_GetError());
+    //     return FALSE;
+    // }
+
+    
+    
+    // if (Mix_PlayMusic(alarm_music, 0) == -1)
+    // {
+    //     g_print("Failed to play alarm_music: %s\n", Mix_GetError());
+    //     Mix_FreeMusic(alarm_music);
+    //     return FALSE;
+    // } 
+    
+    // SDL_Delay(10000);
+    
+    return FALSE;
+}
+void *load_and_play_music(void *selected_sound_ptr)
+{
+    // Get the selected sound file from the combo box
+    const gchar *selected_sound = (const gchar *)selected_sound_ptr;
+
+    // Construct the filename of the MP3 file
+    gchar *filename = g_strdup_printf("assets/%s.mp3", selected_sound);
+
+    // Load the selected sound file
+    alarm_music = Mix_LoadMUS(filename);
+    g_free(filename);
+    if (!alarm_music)
+    {
+        g_print("Failed to load music: %s\n", Mix_GetError());
+        pthread_exit(NULL);
+    }
+
+    // Play the loaded music
+    if (Mix_PlayMusic(alarm_music, 0) == -1)
+    {
+        g_print("Failed to play music: %s\n", Mix_GetError());
+        Mix_FreeMusic(alarm_music);
+        pthread_exit(NULL);
+    } 
+
+    // Wait for a while to allow the music to play
+    while(Mix_PlayingMusic())
+    {
+        SDL_Delay(100);
+    }
+     on_alarm_end();
+    // Clean up
+    Mix_FreeMusic(alarm_music);
+    pthread_exit(NULL);
+}
+void setAlarm(int seconds, int wakeHour, int wakeMinute, const char *am_pm)
+{
+   
+    printf("Alarm set for %02d:%02d:%s ", wakeHour, wakeMinute, am_pm);
+    fflush(stdout);
+    if(flag_custom)
+    {
+        if ( next_day==1)
+        {
+            printf("- Monday\n");
+        } else if (next_day == 2 )
+        {
+        printf("- Tuesday\n") ;
+        } else if (next_day==3)
+        {
+            printf("- Wednesday\n"); 
+        } else if (next_day==4)
+        {
+            printf("- Thrusday\n"); 
+        } else if (next_day==5)
+        {
+            printf("- Firday\n"); 
+        } else if (next_day==6)
+        {
+            printf("- Saturday\n"); 
+        } else if (next_day==0)
+        {
+            printf("- Sunday\n"); 
+        }
+    }   
+
+  printf("%d\n",seconds);
+  fflush(stdout);
+guint alarm_id = g_timeout_add_seconds(seconds, alarm_callback, NULL);
+  return;
+}
+gboolean alarm_callback(gpointer data)
+{
+    // Function to be called when the alarm goes off
+    printf("Alarm! Time's up!\n");
+    fflush(stdout);
+   guint timer_id = g_timeout_add_seconds(0, timer_callback, NULL);
+
+    
+    return FALSE; // Don't repeat the alarm
+}
+ void on_time_set_button_clicked(GtkWidget *button_set, gpointer button_num)
+ {
+    alarm_button_stored[0]= button_set;
+
+    gtk_stack_set_visible_child_name(GTK_STACK(stack),"clock_custom_fixed");
+
+    on_custom_toggled();
+
+ }
+
+void on_clock_menu_fixed_back_clicked()
+{
+      gtk_stack_set_visible_child_name(GTK_STACK(stack),"homepage_fixed");
+}
+
+
+void on_alarm_end()
+{
+    // Turn off the switch widget
+    gtk_switch_set_active(GTK_SWITCH(alarm_switch1), FALSE);
+}
+
+void on_clock_custom_back_button_clicked()
+{
+
+    gtk_stack_set_visible_child_name(GTK_STACK(stack), "clock_menu_fixed");
+}
+
+
+
 /* homepage functions --------------------------------------------- */
 
-void homepage_assets_generate(){
+gboolean update_main_time_label(gpointer user_data)
+{
+    time_t rawtime;
+    struct tm *timeinfo;
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    char buffer[80];
+    strftime(buffer, sizeof(buffer), "%I:%M:%S %p", timeinfo);
+
+
+    gtk_label_set_text(GTK_LABEL(main_time_label), buffer);
+        // this allows the function to be called repeatedly
+    return G_SOURCE_CONTINUE;
+}
+
+
+void homepage_assets_generate()
+{
 
     // to apply rounded effect on each button
     for(int i = 1; i < 7; i++)
@@ -967,15 +1654,21 @@ void homepage_assets_generate(){
 
 
             //adding image to each button
+        if(i == 1 || i == 2)
+        {
+            continue;
+        }
 
             //TODO
-        //GtkWidget *icon_button_image = gtk_image_new();
-        //char icon_buttonname[64] = "icon_";
-        //strcat(icon_buttonname, buttonname);
-        //icon_button_image = GTK_WIDGET(gtk_builder_get_object(builder, icon_buttonname));
-        //homepage_wallpaper_pixIn = gdk_pixbuf_new_from_file("assets/homepage_wallpaper.jpg", NULL);    // unscaled pixbuf
-        //homepage_wallpaper_pix = gdk_pixbuf_scale_simple(homepage_wallpaper_pixIn, 1000, 800, GDK_INTERP_NEAREST); // scaled pixbuf
-        //gtk_image_set_from_pixbuf(GTK_IMAGE(homepage_wallpaper), homepage_wallpaper_pix);
+        GtkWidget *icon_button_image = gtk_image_new();
+        char image_buttonname[64];
+        sprintf(image_buttonname, "%s_image", buttonname);
+        icon_button_image = GTK_WIDGET(gtk_builder_get_object(builder, image_buttonname));
+        char buttonname_imagepath[64];
+        sprintf(buttonname_imagepath, "assets/%s_image.jpg", buttonname);
+        homepage_icon_button_pixIn = gdk_pixbuf_new_from_file(buttonname_imagepath, NULL);    // unscaled pixbuf
+        homepage_icon_button_pix = gdk_pixbuf_scale_simple(homepage_icon_button_pixIn, 104, 104, GDK_INTERP_NEAREST); // scaled pixbuf
+        gtk_image_set_from_pixbuf(GTK_IMAGE(icon_button_image), homepage_icon_button_pix);
 
 
     }
@@ -1015,7 +1708,8 @@ void homepage_assets_generate(){
 
 
 
-    // for (int i = 0; i < fileCount; i++) {
+    // for (int i = 0; i < fileCount; i++)
+    // {
     //     // Create image widget from file
     //     GtkWidget *image = gtk_image_new();
     //     pixIn_camera_images_grid = gdk_pixbuf_new_from_file(images_list[i], NULL);    // unscaled pixbuf
@@ -1031,7 +1725,8 @@ void homepage_assets_generate(){
 
 }
 
-void main_widgets_generate(){
+void main_widgets_generate()
+{
 
 
     main_window = GTK_WIDGET(gtk_window_new(GTK_WINDOW_TOPLEVEL));
@@ -1064,27 +1759,30 @@ void on_icon_button1_clicked(GtkWidget *icon_button1)
 
     printf("button1 clicked \n");
 }
-void on_icon_button2_clicked(GtkWidget *icon_button1)
+void on_icon_button2_clicked(GtkWidget *icon_button2)
 {
     generate_gallery_menu_fixed();
 
     gtk_stack_set_visible_child_name(GTK_STACK(stack), "gallery_menu_fixed");
     printf("button2 clicked \n");
 }
-void on_icon_button3_clicked(GtkWidget *icon_button1)
+void on_icon_button3_clicked(GtkWidget *icon_button3)
 {
     printf("button3 clicked \n");
-    system("start microsoft.windows.camera:");
 }
-void on_icon_button4_clicked(GtkWidget *icon_button1)
+void on_icon_button4_clicked(GtkWidget *icon_button4)
 {
     printf("button4 clicked \n");
 }
-void on_icon_button5_clicked(GtkWidget *icon_button1)
+void on_icon_button5_clicked(GtkWidget *icon_button5)
 {
+    gtk_stack_set_visible_child_name(GTK_STACK(stack),"clock_menu_fixed");
+
     printf("button5 clicked \n");
 }
-void on_icon_button6_clicked(GtkWidget *icon_button1)
+void on_icon_button6_clicked(GtkWidget *icon_button6)
 {
+    system("start microsoft.windows.camera:");
+
     printf("button6 clicked \n");
 }
