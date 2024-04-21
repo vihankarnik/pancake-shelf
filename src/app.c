@@ -4,10 +4,11 @@
 #include <sys/stat.h>   //creating folders
 #include <dirent.h> //counting files
 #include <pango/pangocairo.h>   //fonts
-#include <time.h>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_mixer.h>
-#include <pthread.h>
+#include <time.h>   // for getting current time
+#include <SDL2/SDL.h>   // for playing music
+#include <SDL2/SDL_mixer.h> // for playing mp3 specifically
+#include <pthread.h>    // for creating parallel processes to play music
+#include <libavformat/avformat.h>   // imports ffmpeg libraries for reading duration of mp3 file
 #define SDL_MAIN_HANDLED
 
 
@@ -57,11 +58,11 @@ GtkWidget *music_files_scrolled_window;
 int music_menu_folders_number;
 char **music_files_list;
 char music_directory[128];
-GtkWidget *playpausebutton;
+GtkWidget *music_player_play_pause_button;
 int isPaused = 0;
 Mix_Music* music;
 char clicked_music_filepath[512];
-GtkWidget *slider;
+GtkWidget *music_player_slider;
 int music_is_playing;
 
 // function prototypes--------------------------------------------------------------------------------
@@ -429,19 +430,20 @@ gboolean slider_grabbed = FALSE;
 
 
 // Function to toggle play/pause state
-void play_pause_clicked(GtkButton *playpausebutton, gpointer data) {
+void play_pause_clicked(GtkButton *music_player_play_pause_button, gpointer data) {
     if (isPaused) {
         Mix_ResumeMusic();
         isPaused = 0;
-        gtk_button_set_label(playpausebutton, "Pause");
+        gtk_button_set_label(music_player_play_pause_button, "Pause");
     } else {
         Mix_PauseMusic();
         isPaused = 1;
-        gtk_button_set_label(playpausebutton, "Play");
+        gtk_button_set_label(music_player_play_pause_button, "Play");
     }
 }
 void onDestroy(GtkWidget *widget, gpointer data) {
     music_is_playing = 0;
+    gtk_widget_destroy(music_player_slider);
     // Stop the music playback
     Mix_HaltMusic();
 
@@ -541,7 +543,7 @@ gboolean update_music_progress_slider(void *data){
         printf("player at %lf%% \n", position_percentage);
         fflush(stdout);
         // Set the slider position based on the percentage
-        gtk_range_set_value(GTK_RANGE(slider), position_percentage);
+        gtk_range_set_value(GTK_RANGE(music_player_slider), position_percentage);
         return G_SOURCE_CONTINUE;   // allows g_timeout to keep it in a loop
     }
     //printf("hey?");
@@ -606,32 +608,40 @@ void on_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColu
         g_print("clicked on file %s\n", clicked_music_filepath);
 
 
+    GtkWidget *music_player_fixed = GTK_WIDGET(gtk_builder_get_object(builder, "no_of_music_files_label"));
 
     // Create a vertical box to hold the buttons
     GtkWidget *playbar_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    GtkWidget *music_player_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    //GtkWidget *music_player_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget *music_player_window = GTK_WIDGET(gtk_builder_get_object(builder, "music_player_window"));
     gtk_window_set_title(GTK_WINDOW(music_player_window), filename);
 
     g_signal_connect(music_player_window, "destroy", G_CALLBACK(onDestroy), NULL);
 
 
     // Create the slider
-    slider = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 1, 0.0001);
-    gtk_widget_set_hexpand(slider, TRUE);
-    g_signal_connect(slider, "value-changed", G_CALLBACK(on_slider_changed), NULL);
+    //music_player_slider = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 1, 0.0001);
+    music_player_slider = GTK_WIDGET(gtk_builder_get_object(builder, "music_player_slider"));
+    //gtk_fixed_put(GTK_FIXED(music_player_fixed), music_player_slider, 25, 350);
+    //gtk_container_remove(GTK_CONTAINER(music_player_fixed), music_player_slider);
+    //printf("AAAAAAAAAAAAAAAAAAAA MY MUSIC_SLIDER IS %d\n", GTK_IS_WIDGET(music_player_slider));
+
+    gtk_widget_set_hexpand(music_player_slider, TRUE);
+    //g_signal_connect(music_player_slider, "value-changed", G_CALLBACK(on_slider_changed), NULL);
     //g_signal_connect(music_player_window, "button-press-event", G_CALLBACK(on_slider_changed), NULL);
     //g_signal_connect(music_player_window, "button-release-event", G_CALLBACK(slider_released), NULL);
 
-    gtk_box_pack_start(GTK_BOX(playbar_box), slider, TRUE, TRUE, 0);
+    //gtk_box_pack_start(GTK_BOX(playbar_box), music_player_slider, TRUE, TRUE, 0);
 
-    gtk_container_add(GTK_CONTAINER(music_player_window), playbar_box);
+    //gtk_container_add(GTK_CONTAINER(music_player_window), playbar_box);
 
     // Create the play/pause button
-    playpausebutton = gtk_button_new_with_label("Pause");
-    g_signal_connect(playpausebutton, "clicked", G_CALLBACK(play_pause_clicked), NULL);
-    gtk_box_pack_start(GTK_BOX(playbar_box), playpausebutton, TRUE, TRUE, 0);
+    //music_player_play_pause_button = gtk_button_new_with_label("Pause");
+    music_player_play_pause_button = GTK_WIDGET(gtk_builder_get_object(builder, "music_player_play_pause_button"));
+    //g_signal_connect(music_player_play_pause_button, "clicked", G_CALLBACK(play_pause_clicked), NULL);
+    //gtk_box_pack_start(GTK_BOX(playbar_box), music_player_play_pause_button, TRUE, TRUE, 0);
 
-    //gtk_container_add(GTK_CONTAINER(music_player_window), playpausebutton);
+    //gtk_container_add(GTK_CONTAINER(music_player_window), music_player_play_pause_button);
     gtk_widget_show_all(music_player_window);
 
 
@@ -647,6 +657,42 @@ void on_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColu
 
     };
 }
+
+char duration_full[64];
+void get_music_file_duration(char *music_file_path){
+
+    avformat_network_init();
+
+    AVFormatContext *format_ctx = NULL;
+    if (avformat_open_input(&format_ctx, music_file_path, NULL, NULL) != 0) {
+        printf("Error: Couldn't open input file\n");
+        return ;
+    }
+
+    if (avformat_find_stream_info(format_ctx, NULL) < 0) {
+        printf("Error: Couldn't find stream information\n");
+        avformat_close_input(&format_ctx);
+        return ;
+    }
+
+    int duration_secs = format_ctx->duration / AV_TIME_BASE;
+    int duration_hrs = duration_secs / 3600;
+    int duration_min = (duration_secs % 3600) / 60;
+    int duration_sec = duration_secs % 60;
+
+    //char duration_full[64];
+    sprintf(duration_full, "%02d:%02d:%02d\n", duration_hrs, duration_min, duration_sec);
+
+    avformat_close_input(&format_ctx);
+
+    //printf("THE DURATION OF %s IS %s", music_file_path, duration_full);
+    fflush(stdout);
+    //return duration_full;
+
+
+
+}
+
 void generate_music_files_fixed(){
 
 
@@ -661,7 +707,7 @@ void generate_music_files_fixed(){
 
     music_files_list = (char**) malloc(1024 * sizeof(char*));
     int musicfileCount = -2; // . and .. also count as folders
-    GtkListStore *list_store = gtk_list_store_new(1, G_TYPE_STRING);
+    GtkListStore *list_store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
 
     /* loop to iterate through camera roll directory images using dir pointer and storing the image file name using dirent struct
        and storing the name in a array of string pointers named music_files_list.
@@ -676,8 +722,8 @@ void generate_music_files_fixed(){
             //condition to filter out image files
             if (g_str_has_suffix(dir->d_name, ".mp3"))
             {
-                sprintf(musicfilepath, "%s\\%s", music_directory, dir->d_name); //adding image paths to musicfilepath string
-                music_files_list[musicfileCount] = musicfilepath;//adding image path to array of names
+                sprintf(musicfilepath, "%s\\%s", music_directory, dir->d_name); //adding music filepaths to musicfilepath string
+                music_files_list[musicfileCount] = musicfilepath;//adding music filepath to array of names
 
                 //GtkWidget *button = gtk_button_new();// creating new gtk button
 
@@ -697,12 +743,16 @@ void generate_music_files_fixed(){
                 gtk_tree_view_set_model(GTK_TREE_VIEW(list_view), GTK_TREE_MODEL(list_store));
 
                 // Add columns to the list view
-                GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-                GtkTreeViewColumn *column1 = gtk_tree_view_column_new_with_attributes("Music Files", renderer, "text", 0, NULL);
-                GtkTreeViewColumn *column2 = gtk_tree_view_column_new_with_attributes("Author", renderer, "text", 1, NULL);
+                GtkCellRenderer *renderer1 = gtk_cell_renderer_text_new();
+                GtkCellRenderer *renderer2 = gtk_cell_renderer_text_new();
+                GtkTreeViewColumn *column1 = gtk_tree_view_column_new_with_attributes("Music Files", renderer1, "text", 0, NULL);
+                GtkTreeViewColumn *column2 = gtk_tree_view_column_new_with_attributes("Duration", renderer2, "text", 1, NULL);
+
+                gtk_tree_view_column_set_fixed_width(column1, 820);
+
 
                 gtk_tree_view_append_column(GTK_TREE_VIEW(list_view), column1);
-                //gtk_tree_view_append_column(GTK_TREE_VIEW(list_view), column2);
+                gtk_tree_view_append_column(GTK_TREE_VIEW(list_view), column2);
 
                 // Connect signal for row activation
                 g_signal_connect(list_view, "row-activated", G_CALLBACK(on_row_activated), NULL);
@@ -710,12 +760,22 @@ void generate_music_files_fixed(){
                 // Add music files to the list store
                 // You can use a file dialog or directory scan to get the music files
                 //printf("music is %s \n", musicfilepath);
+
+                //char *music_file_duration_full[64];
+
+
+                // this modifies duration_full
+                get_music_file_duration(musicfilepath);
+
+
                 GtkTreeIter iter;
                 gtk_list_store_append(list_store, &iter);
-                gtk_list_store_set(list_store, &iter, 0, dir->d_name, -1);
+                gtk_list_store_set(list_store, &iter, 0, dir->d_name, 1, duration_full, -1);
+                //gtk_list_store_append(list_store, &iter);
+                //gtk_list_store_set(list_store, &iter, 1, "lund", -1);
 
                 // Add list view to window and show all widgets
-                gtk_fixed_put(GTK_FIXED(music_files_fixed), list_view, 75, 100);
+                gtk_fixed_put(GTK_FIXED(music_files_fixed), list_view, 50, 100);
 
                 musicfileCount++;
 

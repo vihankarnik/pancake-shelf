@@ -2,6 +2,70 @@
 <!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
+  <object class="GtkAdjustment" id="adjustment1">
+    <property name="upper">1</property>
+    <property name="step-increment">1e-08</property>
+  </object>
+  <object class="GtkWindow" id="music_player_window">
+    <property name="width-request">450</property>
+    <property name="height-request">450</property>
+    <property name="can-focus">False</property>
+    <child>
+      <object class="GtkFixed" id="music_player_fixed">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <child>
+          <object class="GtkImage">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="pixel-size">210</property>
+            <property name="icon-name">audio-x-generic</property>
+            <property name="icon_size">6</property>
+          </object>
+          <packing>
+            <property name="x">120</property>
+            <property name="y">60</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkScale" id="music_player_slider">
+            <property name="width-request">400</property>
+            <property name="height-request">80</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="has-focus">True</property>
+            <property name="adjustment">adjustment1</property>
+            <property name="show-fill-level">True</property>
+            <property name="fill-level">1</property>
+            <property name="round-digits">8</property>
+            <property name="digits">8</property>
+            <property name="draw-value">False</property>
+            <property name="value-pos">left</property>
+            <signal name="value-changed" handler="on_slider_changed" swapped="no"/>
+          </object>
+          <packing>
+            <property name="x">25</property>
+            <property name="y">300</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="music_player_play_pause_button">
+            <property name="label" translatable="yes">Pause</property>
+            <property name="width-request">100</property>
+            <property name="height-request">80</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <signal name="clicked" handler="play_pause_clicked" swapped="no"/>
+          </object>
+          <packing>
+            <property name="x">192</property>
+            <property name="y">381</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
   <object class="GtkFixed" id="camera_images_fixed">
     <property name="width-request">1000</property>
     <property name="height-request">800</property>
