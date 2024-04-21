@@ -69,6 +69,37 @@ GtkWidget *music_player_slider;
 int music_is_playing;
 
 
+//calculator variables---------------------------------------------------------
+
+
+GtkWidget *calculator_normal_fixed;
+GtkWidget *calculator_normal_entry;
+GtkWidget *calculator_expression_label;
+GtkWidget *calculator_scientific_fixed;
+GtkWidget *calculator_scientific_entry;
+GtkWidget *calculator_expression_label_2;
+
+
+char *current_text;
+char operator;
+char op ='=';
+char *num1;
+char *num2;
+int calculator_flag=0;
+int calculator_flag1=0;
+void increase_entry_text_size(GtkEntry *entry, int size);
+
+void insert_text_handler(GtkEditable *editable, const gchar *text, gint length, gint *position, gpointer user_data);
+
+void keyboard_entry_changed(GtkEntry *entry, gpointer user_data);
+void keyboard_entry_changed_2(GtkEntry *entry, gpointer user_data);
+void evaluate_changed_entry(GtkEntry *entry, GtkLabel *label);
+
+double evaluate_entry(char *num1, char *num2, char operator);
+void a_button_clicked(GtkButton *button, gpointer i);
+void a_button_clicked_2(GtkButton *button, gpointer i);
+
+
 //Alarm variables--------------------------------------------------------------
 
 typedef void (*SwitchFunction)(GtkWidget*);
@@ -177,6 +208,10 @@ void music_menu_folder_button_clicked();
 void generate_music_files_fixed();
 
 
+//Calculator functions---------------------------------------------------------
+
+void calculator_assets_generate();
+
 //Alarm functions--------------------------------------------------------------
 
 int alarm_assets_generate();
@@ -258,6 +293,11 @@ int SDL_main(int argc, char *argv[])
     // Music player code here--------------------------------------------------
 
     music_player_assets_generate();
+
+
+    // calculator code here----------------------------------------------------
+
+    calculator_assets_generate();
 
 
     // Alarm code here---------------------------------------------------------
@@ -1112,6 +1152,1004 @@ void on_music_files_home_button_clicked()
 
 }
 
+
+// calculator functions--------------------------------------------------------
+
+
+gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
+    // Ignore arrow key events to prevent cursor movement
+    if (event->keyval == GDK_KEY_Left || event->keyval == GDK_KEY_Right ||
+        event->keyval == GDK_KEY_Up || event->keyval == GDK_KEY_Down) {
+        return TRUE; // Stop further processing of the event
+    }
+    return FALSE; // Allow normal event processing
+}
+gboolean on_button_press(GtkWidget *widget, GdkEventButton *event, gpointer user_data) {
+    // Prevent entry from receiving focus when clicked
+    gtk_widget_set_can_focus(widget, FALSE);
+    return TRUE; // Stop further processing of the event
+}
+
+
+void calculator_assets_generate(){
+
+    current_text= (char *)malloc(1024*sizeof(char));
+    num1= (char *)malloc(1024*sizeof(char));
+    num2= (char *)malloc(1024*sizeof(char));
+    strcpy(num1,"");
+    strcpy(num2, "");
+
+    calculator_normal_fixed = GTK_WIDGET(gtk_builder_get_object(builder, "calculator_normal_fixed"));
+    calculator_normal_entry = GTK_WIDGET(gtk_builder_get_object(builder, "calculator_normal_entry"));
+    calculator_expression_label =GTK_WIDGET(gtk_builder_get_object(builder, "calculator_expression_label"));
+
+    calculator_scientific_fixed = GTK_WIDGET(gtk_builder_get_object(builder, "calculator_scientific_fixed"));
+    calculator_scientific_entry = GTK_WIDGET(gtk_builder_get_object(builder, "calculator_scientific_entry"));
+    calculator_expression_label_2 =GTK_WIDGET(gtk_builder_get_object(builder, "calculator_expression_label_2"));
+
+
+    for(int i=1; i<25;++i)
+    {
+        GtkWidget *button;
+        char str[50];
+        sprintf(str, "calculator_button_%d", i);
+        button = GTK_WIDGET(gtk_builder_get_object(builder, str));
+
+        g_signal_connect(button, "clicked", G_CALLBACK(a_button_clicked), GINT_TO_POINTER(i));// adding signal to button
+
+    }
+    for(int i=1; i<36;++i)
+    {
+        GtkWidget *button;
+        char str[50];
+        sprintf(str, "calculator2_button_%d", i);
+        button = GTK_WIDGET(gtk_builder_get_object(builder, str));
+
+        g_signal_connect(button, "clicked", G_CALLBACK(a_button_clicked_2), GINT_TO_POINTER(i));// adding signal to button
+
+    }
+
+
+
+    // Connect to the "button-press-event" signal to prevent the cursor from moving
+    g_signal_connect(G_OBJECT(calculator_normal_entry), "key-press-event", G_CALLBACK(on_key_press), FALSE);
+    g_signal_connect(calculator_normal_entry, "button-press-event", G_CALLBACK(on_button_press), NULL);
+    increase_entry_text_size(GTK_ENTRY(calculator_normal_entry), 50);
+
+    g_signal_connect(G_OBJECT(calculator_scientific_entry), "key-press-event", G_CALLBACK(on_key_press), FALSE);
+    g_signal_connect(calculator_scientific_entry, "button-press-event", G_CALLBACK(on_button_press), NULL);
+    increase_entry_text_size(GTK_ENTRY(calculator_scientific_entry), 50);
+
+ 
+    gtk_stack_add_named(GTK_STACK(stack), calculator_normal_fixed, "calculator_normal_fixed");
+    gtk_stack_add_named(GTK_STACK(stack), calculator_scientific_fixed, "calculator_scientific_fixed");
+
+    g_signal_connect(calculator_normal_entry, "insert-text", G_CALLBACK(insert_text_handler), NULL);
+    g_signal_connect(calculator_normal_entry, "changed", G_CALLBACK(keyboard_entry_changed), NULL);
+
+    g_signal_connect(calculator_scientific_entry, "insert-text", G_CALLBACK(insert_text_handler), NULL);
+    g_signal_connect(calculator_scientific_entry, "changed", G_CALLBACK(keyboard_entry_changed_2), NULL);
+
+
+}
+
+
+void insert_text_handler(GtkEditable *editable, const gchar *text, gint length, gint *position, gpointer user_data) 
+{
+    printf("%s", text);
+    // Check if the inserted text is a valid integer
+    if (!isdigit(text[length-1]) && text[length-1] != '*' && text[length-1] != '/' && text[length-1] != '-' && text[length-1] != '+' && text[length-1] != '.' && text[length-1] != '=')
+    {
+        // If any character is not a digit, prevent its insertion
+        g_signal_stop_emission_by_name(editable, "insert-text");
+        return;
+    }
+}
+void increase_entry_text_size(GtkEntry *entry, int size) {
+    // Create a CSS style provider
+    GtkCssProvider *provider = gtk_css_provider_new();
+
+    // Construct CSS style
+    gchar *css_style = g_strdup_printf("entry { font-size: %dpx; }", size);
+
+    // Load the CSS style
+    gtk_css_provider_load_from_data(provider, css_style, -1, NULL);
+
+    // Apply the style to the entry
+    GtkStyleContext *context = gtk_widget_get_style_context(GTK_WIDGET(entry));
+    gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+
+    // Free resources
+    g_free(css_style);
+    g_object_unref(provider);
+}
+
+void a_button_clicked(GtkButton *button, gpointer i)
+{
+    int a = GPOINTER_TO_INT(i);
+    // Get the current cursor position
+    gint cursor_pos = gtk_editable_get_position(GTK_EDITABLE(calculator_normal_entry));
+    const char *text = gtk_entry_get_text(GTK_ENTRY(calculator_normal_entry));
+    char str[1024];
+    gint temp_length = gtk_entry_get_text_length(GTK_ENTRY(calculator_normal_entry));   
+    const gchar *tex = gtk_label_get_text(GTK_LABEL(calculator_expression_label));
+    int len_label = strlen(tex);
+    strcpy(str , text);      
+
+    char c;
+    switch (a)
+    {
+        case 1:
+                printf("yes");
+                double pi =3.14159265359;
+                if(temp_length == 0)
+                {
+                    sprintf(num2, "%f", pi);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), num2);
+                    gtk_editable_set_position(GTK_EDITABLE(calculator_normal_entry), cursor_pos + strlen(num2));
+
+                }
+                
+                return; 
+        case 18: 
+                    double e =2.718281828459045;
+                    if(temp_length == 0)
+                    {
+                        sprintf(num2, "%f", e);
+                        gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), num2);
+                        gtk_editable_set_position(GTK_EDITABLE(calculator_normal_entry), cursor_pos + strlen(num2));
+                    }
+                return;                
+        case 17: 
+
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+                }
+                if(temp_length==0)
+                {
+                    double temp = strtod(num1, NULL);
+                    if(temp <0)
+                        temp = temp*(-1);
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), "");
+                    return ;
+                }
+                else{
+
+                    double temp = strtod(str, NULL);
+                    if(temp <0)
+                        temp = temp*(-1);
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), "");
+                    return ;
+                }           
+        case 19:
+
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length==0)
+                {
+                    if(strtod(num1,NULL)<=0)
+                    {
+                        gtk_label_set_text(GTK_LABEL(calculator_expression_label), "Invalid Input");
+                        gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), "");
+                        calculator_flag =1;
+                        return;
+                    }
+                    else
+                    {
+                        double temp = log(strtod(num1, NULL));
+                        sprintf(num1, "%f", temp);
+                        gtk_label_set_text(GTK_LABEL(calculator_expression_label), num1);
+                        gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), "");
+                        return ;
+                    }
+                }
+                else{
+                    double temp = log(strtod(str, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), "");
+                    return ;
+                }
+        case 22: 
+
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length==0)
+                {
+                    if(strtod(num1,NULL)<=0)
+                    {
+                        gtk_label_set_text(GTK_LABEL(calculator_expression_label), "Invalid Input");
+                        gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), "");
+                        calculator_flag =1;
+                        return;
+                    }
+                    else
+                    {
+                        double temp = sqrt(strtod(num1, NULL));
+                        sprintf(num1, "%f", temp);
+                        gtk_label_set_text(GTK_LABEL(calculator_expression_label), num1);
+                        gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), "");
+                        return ;
+                    }
+                }
+                else
+                {
+                    double temp = sqrt(strtod(str, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), "");
+                    return ;
+                }
+        case 21:
+
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length ==0)
+                {
+                    double temp = pow((strtod(num1, NULL)),2);
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), "");
+                    return ;
+                }
+                else
+                {
+                    double temp = pow((strtod(str, NULL)),2);
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), "");
+                    return ;
+                }
+                
+        case 2: c='0'; break;
+        case 3: c='.'; break;
+        case 4: c='='; break;
+        case 5: c='1'; break;
+        case 6: c='2'; break;
+        case 7: c='3'; break;
+        case 8: c='+'; break;
+        case 9: c='4'; break;
+        case 10: c='5'; break;
+        case 11: c='6'; break;
+        case 12: c='-'; break;
+        case 13: c='7'; break;
+        case 14: c='8'; break;
+        case 15: c='9'; break;
+        case 16: c='*'; break;
+        case 20: c='/'; break;
+        case 23:
+
+                 gtk_label_set_text(GTK_LABEL(calculator_expression_label), "");
+                 gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), "");
+                 strcpy(num1,"");
+                 strcpy(num2,"");
+                 return;
+        case 24: 
+
+                if (temp_length > 0) {
+                gtk_editable_delete_text(GTK_EDITABLE(calculator_normal_entry), temp_length - 1, temp_length);
+                }
+                return;
+
+        default:break;
+    }
+    sprintf(str,"%s%c", str,c);
+    gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), str);
+    gtk_editable_set_position(GTK_EDITABLE(calculator_normal_entry), cursor_pos + strlen(str));
+
+    evaluate_changed_entry(GTK_ENTRY(calculator_normal_entry),GTK_LABEL(calculator_expression_label));
+}
+void a_button_clicked_2(GtkButton *button, gpointer i)
+{
+    int a = GPOINTER_TO_INT(i);
+    // Get the current cursor position
+    gint cursor_pos = gtk_editable_get_position(GTK_EDITABLE(calculator_scientific_entry));
+    const char *text = gtk_entry_get_text(GTK_ENTRY(calculator_scientific_entry));
+    char str[1024];
+    gint temp_length = gtk_entry_get_text_length(GTK_ENTRY(calculator_scientific_entry));   
+    const gchar *tex = gtk_label_get_text(GTK_LABEL(calculator_expression_label_2));
+    int len_label = strlen(tex);
+    strcpy(str , text);      
+
+    char c;
+    switch (a)
+    {
+        case 22:
+                printf("yes");
+                double pi =3.14159265359;
+                if(temp_length == 0)
+                {
+                    sprintf(num2, "%f", pi);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), num2);
+                    gtk_editable_set_position(GTK_EDITABLE(calculator_scientific_entry), cursor_pos + strlen(num2));
+
+                }
+                
+                return; 
+        case 23: 
+                    double e =2.718281828459045;
+                    if(temp_length == 0)
+                    {
+                        sprintf(num2, "%f", e);
+                        gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), num2);
+                        gtk_editable_set_position(GTK_EDITABLE(calculator_scientific_entry), cursor_pos + strlen(num2));
+                    }
+                return;                
+        case 2: 
+
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+                }
+                if(temp_length==0)
+                {
+                    double temp = strtod(num1, NULL);
+                    if(temp <0)
+                        temp = temp*(-1);
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+                else{
+
+                    double temp = strtod(str, NULL);
+                    if(temp <0)
+                        temp = temp*(-1);
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }           
+        case 24:
+
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length==0)
+                {
+                    if(strtod(num1,NULL)<=0)
+                    {
+                        gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), "Invalid Input");
+                        gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                        calculator_flag =1;
+                        return;
+                    }
+                    else
+                    {
+                        double temp = log(strtod(num1, NULL));
+                        sprintf(num1, "%f", temp);
+                        gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                        gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                        return ;
+                    }
+                }
+                else{
+                    double temp = log(strtod(str, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+        case 28: 
+
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length==0)
+                {
+                    if(strtod(num1,NULL)<=0)
+                    {
+                        gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), "Invalid Input");
+                        gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                        calculator_flag =1;
+                        return;
+                    }
+                    else
+                    {
+                        double temp = sqrt(strtod(num1, NULL));
+                        sprintf(num1, "%f", temp);
+                        gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                        gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                        return ;
+                    }
+                }
+                else
+                {
+                    double temp = sqrt(strtod(str, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+        case 27:
+
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length ==0)
+                {
+                    double temp = pow((strtod(num1, NULL)),2);
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+                else
+                {
+                    double temp = pow((strtod(str, NULL)),2);
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+        case 29: 
+        
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length==0)
+                {
+                    if(strtod(num1,NULL)<=0)
+                    {
+                        gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), "Invalid Input");
+                        gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                        calculator_flag =1;
+                        return;
+                    }
+                    else
+                    {
+                        double temp = log(strtod(num1, NULL))/log(10);
+                        sprintf(num1, "%f", temp);
+                        gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                        gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                        return ;
+                    }
+                }
+                else{
+                    double temp = log(strtod(str, NULL))/log(10);
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+            case 30:
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(strtod(num1,NULL)==0)
+                {
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), "Invalid Input");
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    calculator_flag =1;
+                    return;
+                }
+                else
+                {
+                    double temp = 1/(strtod(num1, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+            case 32:
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length ==0)
+                {
+                    double temp = pow(2.718281828459045,strtod(num1, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+                else
+                {
+                    double temp = pow(2.718281828459045,strtod(str, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+            case 33:
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length ==0)
+                {
+                    double temp = pow(2,strtod(num1, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+                else
+                {
+                    double temp = pow(2,(strtod(str, NULL)));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+            case 1:
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length ==0)
+                {
+                    double temp = 1/sin(strtod(num1, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+                else
+                {
+                    double temp = 1/sin(strtod(str, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+            case 6:
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length ==0)
+                {
+                    double temp = 1/tan(strtod(num1, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+                else
+                {
+                    double temp = 1/tan(strtod(str, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+            case 11:
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length ==0)
+                {
+                    double temp = 1/cos(strtod(num1, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+                else
+                {
+                    double temp = 1/cos(strtod(str, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+            case 16:
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length ==0)
+                {
+                    double temp = tan(strtod(num1, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+                else
+                {
+                    double temp = tan(strtod(str, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+            case 21:
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length ==0)
+                {
+                    double temp = cos(strtod(num1, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+                else
+                {
+                    double temp = cos(strtod(str, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+            case 26:
+                if(len_label ==0)
+                {
+                    strcpy(num1, str);
+                    calculator_flag1 =1;
+
+                }
+
+                if(temp_length ==0)
+                {
+                    double temp = sin(strtod(num1, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+                else
+                {
+                    double temp = sin(strtod(str, NULL));
+                    sprintf(num1, "%f", temp);
+                    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), num1);
+                    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                    return ;
+                }
+
+        case 3: c='0'; break;
+        case 4: c='.'; break;
+        case 5: c='='; break;
+        case 7: c='1'; break;
+        case 8: c='2'; break;
+        case 9: c='3'; break;
+        case 10: c='+'; break;
+        case 12: c='4'; break;
+        case 13: c='5'; break;
+        case 14: c='6'; break;
+        case 15: c='-'; break;
+        case 17: c='7'; break;
+        case 18: c='8'; break;
+        case 19: c='9'; break;
+        case 20: c='*'; break;
+        case 25: c='/'; break;
+        case 34:
+
+                 gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), "");
+                 gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), "");
+                 strcpy(num1,"");
+                 strcpy(num2,"");
+                 return;
+        case 35: 
+
+                if (temp_length > 0) {
+                gtk_editable_delete_text(GTK_EDITABLE(calculator_scientific_entry), temp_length - 1, temp_length);
+                }
+                return;
+
+        default:break;
+    }
+    sprintf(str,"%s%c", str,c);
+    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), str);
+    gtk_editable_set_position(GTK_EDITABLE(calculator_scientific_entry), cursor_pos + strlen(str));
+
+    evaluate_changed_entry(GTK_ENTRY(calculator_scientific_entry),GTK_LABEL(calculator_expression_label_2));
+}
+
+
+void keyboard_entry_changed(GtkEntry *entry, gpointer user_data)
+{
+    evaluate_changed_entry(entry,GTK_LABEL(calculator_expression_label));
+}
+
+double evaluate_entry(char *num1, char *num2, char operator)
+{
+    double number1 =0, number2 =0;
+    number1 = strtod(num1, NULL);
+    number2 = strtod(num2, NULL);
+
+    switch (operator)
+    {
+        case '+': return number1 + number2;
+        case '/': return number1 / number2;
+        case '*': return number1 * number2;
+        case '-': return number1- number2;
+        default:break; 
+    }
+}
+void on_home_button_clicked()
+{
+;
+}
+
+void evaluate_changed_entry(GtkEntry *entry,GtkLabel *label)
+{
+    if(calculator_flag ==1)
+    {
+        gtk_label_set_text(GTK_LABEL(label), "");
+        strcpy(num1,"");
+        strcpy(num2,"");
+        calculator_flag =0;
+    }
+    gint length = gtk_entry_get_text_length(GTK_ENTRY(entry));   
+    const char *text = gtk_entry_get_text(GTK_ENTRY(entry));
+    strcpy(current_text , text);
+    double answer;
+    char str[1024];
+
+ 
+    const gchar *text_label = gtk_label_get_text(GTK_LABEL(label));
+    int length_label = strlen(text_label);    
+    int a=0, b =0;
+    if(current_text[length-1] == '=' || current_text[length-1] == '/' || current_text[length-1] == '*' || current_text[length-1] == '-' || current_text[length-1] == '+')
+    {
+        operator = current_text[length-1];
+        if(length_label == 0|| calculator_flag1 ==1)
+        {
+            calculator_flag1 =0;
+            current_text[length-1]=' ';
+            char temp[1024] ;
+            strcpy(num1, current_text);
+
+            op =operator;
+            sprintf(str, "%s%c", current_text, operator);
+            gtk_label_set_text(GTK_LABEL(label), str);
+            gtk_entry_set_text(GTK_ENTRY(entry), "");
+  
+        }        
+        else if(operator =='=')
+        {
+            if(current_text[0]=='=')
+            {
+                current_text[0]= ' ';
+                gtk_entry_set_text(GTK_ENTRY(entry), "");
+
+            }
+            else if(op =='=')
+            {
+                current_text[length-1]=' ';
+                strcpy(num1,current_text);
+                gtk_label_set_text(GTK_LABEL(label), current_text);
+                gtk_entry_set_text(GTK_ENTRY(entry), "");
+            }
+            else
+            {
+                current_text[length-1]=' ';
+
+                strcpy(num2, current_text);
+                if(op =='/' && strtod(num2,NULL) ==0)
+                {
+                    gtk_label_set_text(GTK_LABEL(label), "Invalid Input");
+                    gtk_entry_set_text(GTK_ENTRY(entry), "");
+                    calculator_flag =1;
+                   
+                }
+                else
+                {
+                    answer =evaluate_entry(num1, num2, op);
+                    sprintf(str, "%s %c %s = %f", num1, op, num2, answer);
+                    gtk_label_set_text(GTK_LABEL(label), str);
+                    sprintf(num1, "%f", answer);
+                    gtk_entry_set_text(GTK_ENTRY(entry), "");
+                    op =operator;
+                }
+            }
+
+        }
+        else
+        {
+            if(current_text[0] == operator)
+            {
+
+                if(op =='=')
+                {
+                    op =operator;
+                    sprintf(str, "%s %c", num1, op);
+                    gtk_label_set_text(GTK_LABEL(label), str);
+                    gtk_entry_set_text(GTK_ENTRY(entry), "");
+
+                }
+                else if(op == '+')
+                {
+                    sprintf(str, "%s %c",num1, operator);
+                    gtk_label_set_text(GTK_LABEL(label), str);
+                    gtk_entry_set_text(GTK_ENTRY(entry), "");
+                    op =operator;
+
+                }
+                else if(op == '-')
+                {
+                    if(operator == '+')
+                    {
+                        current_text[0]= ' ';
+                        gtk_entry_set_text(GTK_ENTRY(entry), "");
+
+                    }
+                    else
+                    {
+                        sprintf(str, "%s %c",num1, operator);
+                        gtk_label_set_text(GTK_LABEL(label), str);
+                        gtk_entry_set_text(GTK_ENTRY(entry), "");
+                        op =operator;
+                    }
+                }
+                else if(op =='/' || op =='*')
+                {
+                    if(operator == '-')
+                        ;
+                    else
+                    {
+                        sprintf(str, "%s %c",num1, operator);
+                        gtk_label_set_text(GTK_LABEL(label), str);
+                        gtk_entry_set_text(GTK_ENTRY(entry), "");
+                        op =operator;
+                    }
+
+                }
+            }
+            else
+            {
+                if(op =='=')
+                {
+                    current_text[length-1] =' ';
+                    strcpy(num1, current_text);
+                    op=operator;
+                    sprintf(str, "%s %c",num1, operator);
+                    gtk_label_set_text(GTK_LABEL(label), str);
+                    gtk_entry_set_text(GTK_ENTRY(entry), "");
+                }
+                else
+                {
+                    current_text[length-1]=' ';
+                    // if(calculator_flag1 ==1)
+                    // {
+                    //     strcpy(num1, current_text);
+                    //     sprintf(str,"%s %c", num1, operator);
+                    //     gtk_label_set_text(GTK_LABEL(calculator_expression_label), str);
+                    //     op =operator;
+                    //     calculator_flag =0;
+                    //     return;
+                    // }
+                    // else
+                        strcpy(num2, current_text);
+                    printf("%s %s", num1, num2);
+                    if(op =='/' && strtod(num2,NULL) ==0)
+                    {
+                        gtk_label_set_text(GTK_LABEL(label), "Invalid Input");
+                        gtk_entry_set_text(GTK_ENTRY(entry), "");
+                        calculator_flag =1;
+                    
+                    }
+                    else
+                    {
+                        answer =evaluate_entry(num1, num2, op);
+                        op = operator;
+                        sprintf(num1, "%f", answer);
+                        sprintf(str, "%s%c", num1, operator);
+                        gtk_label_set_text(GTK_LABEL(label), str);
+                        gtk_entry_set_text(GTK_ENTRY(entry), "");
+                    }
+                }
+            }
+
+        } 
+    }
+
+}
+
+void on_normal_mode_clicked()
+{
+    const char *text = gtk_entry_get_text(GTK_ENTRY(calculator_normal_entry));
+    char temp_text[1024];
+    strcpy(temp_text , text);
+    gtk_entry_set_text(GTK_ENTRY(calculator_scientific_entry), temp_text);
+    gint cursor_pos = gtk_editable_get_position(GTK_EDITABLE(calculator_normal_entry));
+    gtk_editable_set_position(GTK_EDITABLE(calculator_scientific_entry), cursor_pos + strlen(temp_text));
+
+    const gchar *text1 = gtk_label_get_text(GTK_LABEL(calculator_expression_label));
+    gtk_label_set_text(GTK_LABEL(calculator_expression_label_2), text1);
+    gtk_stack_set_visible_child_name(GTK_STACK(stack), "calculator_scientific_fixed");
+
+}
+void keyboard_entry_changed_2(GtkEntry *entry, gpointer user_data)
+{
+
+    evaluate_changed_entry(GTK_ENTRY(calculator_scientific_entry), GTK_LABEL(calculator_expression_label_2));
+}
+void on_scientific_mode_clicked()
+{
+    const char *text = gtk_entry_get_text(GTK_ENTRY(calculator_scientific_entry));
+    char temp_text[1024];
+    strcpy(temp_text , text);
+    gtk_entry_set_text(GTK_ENTRY(calculator_normal_entry), temp_text);
+    gint cursor_pos = gtk_editable_get_position(GTK_EDITABLE(calculator_normal_entry));
+    gtk_editable_set_position(GTK_EDITABLE(calculator_normal_entry), cursor_pos + strlen(temp_text));
+
+    const gchar *text1 = gtk_label_get_text(GTK_LABEL(calculator_expression_label_2));
+    gtk_label_set_text(GTK_LABEL(calculator_expression_label), text1);
+    gtk_stack_set_visible_child_name(GTK_STACK(stack), "calculator_normal_fixed");
+
+
+}
+
+
+void on_calculator_home_button_clicked(){
+
+    gtk_stack_set_visible_child_name(GTK_STACK(stack),"homepage_fixed");
+
+}
+
+
 // alarm functions-------------------------------------------------------------
 
 int alarm_assets_generate()
@@ -1768,10 +2806,13 @@ void on_icon_button2_clicked(GtkWidget *icon_button2)
 }
 void on_icon_button3_clicked(GtkWidget *icon_button3)
 {
+    gtk_stack_set_visible_child_name(GTK_STACK(stack), "calculator_normal_fixed");
     printf("button3 clicked \n");
 }
 void on_icon_button4_clicked(GtkWidget *icon_button4)
 {
+    //gtk_stack_set_visible_child_name(GTK_STACK(stack), "");
+
     printf("button4 clicked \n");
 }
 void on_icon_button5_clicked(GtkWidget *icon_button5)
