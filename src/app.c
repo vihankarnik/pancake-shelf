@@ -57,6 +57,8 @@ GtkWidget *music_menu_grid;
 GtkWidget *music_menu_add_new_folder_button;
 GtkWidget *music_files_fixed;
 GtkWidget *music_files_scrolled_window;
+GtkWidget *music_player_window;
+GtkWidget *music_player_fixed;
 
 int music_menu_folders_number;
 char **music_files_list;
@@ -66,6 +68,7 @@ int isPaused = 0;
 Mix_Music* music;
 char clicked_music_filepath[512];
 GtkWidget *music_player_slider;
+GtkAdjustment *music_player_slider_adjustment1;
 int music_is_playing;
 
 
@@ -106,7 +109,7 @@ typedef void (*SwitchFunction)(GtkWidget*);
 SwitchFunction switch_functions[3];
 // All global variables for clock page 1
 GtkWidget *window_clock;                            //window 1 for general timings
-GtkWidget *clock_main_fixed_back ;
+GtkWidget *clock_main_fixed_back;
 GtkWidget *clock_menu_fixed;
 GtkWidget **alarm_button_stored;                            // varible frame set on the window named frame1
 
@@ -188,6 +191,20 @@ Mix_Chunk* song1 = NULL;
 Mix_Chunk* song2 = NULL;
 
 
+// calendar variables
+GtkWidget *calendar_fixed;
+GtkWidget *icon_buttons[43]; // number of icons + 1
+GtkComboBox *monthName;
+GtkSpinButton *yearName;
+GtkWidget *currentDate;
+GtkWidget *dateContents;    
+GtkWidget *editButton;
+
+int year, monthNum, NumDays, PrevDays, dayIndex, check=0;
+
+char calendar_note_filename[100];
+
+
 // function prototypes--------------------------------------------------------------------------------
 gboolean update_main_time_label(gpointer user_data);
 void homepage_assets_generate();
@@ -211,6 +228,23 @@ void generate_music_files_fixed();
 //Calculator functions---------------------------------------------------------
 
 void calculator_assets_generate();
+void displayContent();
+void editContent(GtkButton *button);
+void set_label_current_date(GtkWidget *label);
+void set_button_color(GtkWidget *button);
+int dayOfWeek(int day, int month, int year);
+int monthToNumber(char* month);
+bool isNumber(const char* str);
+int get_date(int year,int monthNum);
+void set_dropdown_value_by_index(GtkComboBox *combo_box, gint index);
+void set_spinner_value(GtkSpinButton *spinner, gdouble value);
+void setButtonDate(GtkWidget *button, int date);
+int numberOfDays(int x, int y);
+void getData();
+void setCalendar();
+void functionSet(GtkButton *button);
+void getMonth(GtkComboBox *widget);
+void getYear(GtkSpinButton *spinner);
 
 //Alarm functions--------------------------------------------------------------
 
@@ -249,7 +283,7 @@ gboolean process_switch_states(gpointer user_data);
 // to process the switches current condition to be fedded in code
 void set_spin_button_values(int *hour, int *minute);
 gboolean on_window_custom_delete_event(GtkWidget *widget, GdkEvent *event, gpointer user_data);
-gboolean alarm_callback(gpointer data);
+gboolean alarm_callback();
 typedef void (*SwitchFunction)(GtkWidget*);
 void on_time_set_button_clicked(GtkWidget *button_set, gpointer button_num);
 void *load_and_play_music(void *selected_sound_ptr) ;
@@ -257,10 +291,16 @@ gboolean timer_callback(gpointer data)  ;
 void on_alarm_end() ;
 
 
+// calendar functions----------------------------------------------------------
+
+void calendar_assets_generate();
+void write_to_file(char text[200]);
+
+
 
 
     //compiling command
-        //gcc susdurationprinter.c -o app $(pkg-config --cflags --libs gtk+-3.0) $(pkg-config --cflags --libs SDL2_mixer) -Wl,--export-all-symbols -lavformat -lavcodec -lavutil -lswresample
+    //gcc b23ph1028_b23cs1048_b23ch1020_b23me1065_main.c -o app $(pkg-config --cflags --libs gtk+-3.0) $(pkg-config --cflags --libs SDL2_mixer) -Wno-deprecated-declarations -Wl,--export-all-symbols -lavformat -lavcodec -lavutil -lswresample
 int SDL_main(int argc, char *argv[])
 {
     //GtkApplication *app;  // this is gtk4 specific
@@ -271,7 +311,7 @@ int SDL_main(int argc, char *argv[])
     gtk_init(NULL, NULL);   //GtkApplication works in gtk4
     //GError *error = NULL;
     //builder = gtk_builder_new();
-    builder = gtk_builder_new_from_file("glade.glade"); // initialising builder object
+    builder = gtk_builder_new_from_file("assets/glade.glade"); // initialising builder object
     if(!builder)
     {
         g_printerr("Failed to load builder object. \n");
@@ -306,6 +346,10 @@ int SDL_main(int argc, char *argv[])
     alarm_assets_generate();
 
 
+    // Calendar code here------------------------------------------------------
+
+
+    calendar_assets_generate();
 
 
 
@@ -334,40 +378,9 @@ int SDL_main(int argc, char *argv[])
     return EXIT_SUCCESS;
 
 
-        // once application starts, it makes a new window
-    //g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
-        // this runs the application till we close it
-    //int status = g_application_run(G_APPLICATION(app), 0, NULL);
-        // this releases the reference app
-    //g_object_unref(app);
-
-    //g_signal_connect(window, "destroy", G_CALLBACK(g_main_quit()), NULL);
-    //while(1)
-    //{
-    //    g_main_context_iteration (NULL, TRUE);  // this calls the main function again
-    //}
-
-    //return status;
 }
 
 
-//static void activate(GtkApplication *app)
-//{
-//    window = GTK_WIDGET(gtk_builder_get_object(builder, "main_window"));
-//    window = gtk_application_window_new(app);
-//
-//    gtk_window_set_title(GTK_WINDOW(window), "WIP app shelf");
-//    gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
-//
-//    //GtkWidget *overlay = gtk_overlay_new();
-//    //gtk_window_set_child(GTK_WINDOW(window), overlay);
-//        //hierarchy- window > overlay > grid > scrolledWindow > textView
-//
-//    //gtk_widget_set_halign (overlay, GTK_ALIGN_CENTER);
-//    //gtk_widget_set_valign (overlay, GTK_ALIGN_START);
-//
-//    gtk_window_present(GTK_WINDOW(window));
-//}
 
 
 //Gallery functions----------------------------------------------------------------------------------
@@ -564,6 +577,7 @@ void a_camera_image_clicked(GtkWidget * button, gpointer data)
 
 
 // music player functions------------------------------------------------------------------------
+void on_slider_changed(GtkWidget* widget, gpointer data);
 
 void music_player_assets_generate()
 {
@@ -605,23 +619,28 @@ gboolean slider_grabbed = FALSE;
 
 
 // Function to toggle play/pause state
-void play_pause_clicked(GtkButton *music_player_play_pause_button, gpointer data)
+void play_pause_clicked()
 {
     if (isPaused)
     {
         Mix_ResumeMusic();
         isPaused = 0;
-        gtk_button_set_label(music_player_play_pause_button, "Pause");
+        gtk_button_set_label(GTK_BUTTON(music_player_play_pause_button), "Pause");
     } else {
         Mix_PauseMusic();
         isPaused = 1;
-        gtk_button_set_label(music_player_play_pause_button, "Play");
+        gtk_button_set_label(GTK_BUTTON(music_player_play_pause_button), "Play");
     }
 }
 void onDestroy(GtkWidget *widget, gpointer data)
 {
     music_is_playing = 0;
-    gtk_widget_destroy(music_player_slider);
+    //gtk_widget_destroy(GTK_WIDGET(music_player_slider_adjustment1));
+    //gtk_widget_destroy(music_player_slider);
+    //gtk_container_remove(GTK_CONTAINER(music_player_fixed), GTK_WIDGET(music_player_slider_adjustment1));
+    //g_object_unref(music_player_slider_adjustment1);
+    //g_object_unref(music_player_slider);
+
     // Stop the music playback
     Mix_HaltMusic();
 
@@ -637,6 +656,46 @@ void onDestroy(GtkWidget *widget, gpointer data)
 
     //// Quit the GTK main loop
     //gtk_main_quit();
+
+
+    music_player_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_default_size(GTK_WINDOW(music_player_window), 450, 450);
+    //music_player_window = GTK_WIDGET(gtk_builder_get_object(builder, "music_player_window"));
+
+    //music_player_fixed = GTK_WIDGET(gtk_builder_get_object(builder, "music_player_fixed"));
+    music_player_fixed = gtk_fixed_new();
+    gtk_container_add(GTK_CONTAINER(music_player_window), GTK_WIDGET(music_player_fixed));
+
+    // image
+
+    GtkWidget *music_player_image = gtk_image_new_from_icon_name("audio-x-generic", GTK_ICON_SIZE_BUTTON);
+    gtk_image_set_pixel_size(GTK_IMAGE(music_player_image), 210);
+    gtk_fixed_put(GTK_FIXED(music_player_fixed), music_player_image, 120, 60);
+
+    // box to hold the buttons
+    GtkWidget *playbar_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+
+    g_signal_connect(music_player_window, "destroy", G_CALLBACK(onDestroy), NULL);
+
+
+    // Create the slider
+    //music_player_slider = GTK_WIDGET(gtk_builder_get_object(builder, "music_player_slider"));
+    //music_player_slider_adjustment1 = GTK_ADJUSTMENT(gtk_builder_get_object(builder, "music_player_slider_adjustment1"));
+    music_player_slider = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 1, 0.00000001);
+    gtk_widget_set_size_request(music_player_slider, 400, 80); // slider size
+    gtk_scale_set_digits(GTK_SCALE(music_player_slider), 8); // decimal precision
+    gtk_scale_set_draw_value(GTK_SCALE(music_player_slider), FALSE);
+    g_signal_connect(music_player_slider, "value-changed", G_CALLBACK(on_slider_changed), NULL);
+
+    gtk_fixed_put(GTK_FIXED(music_player_fixed), music_player_slider, 25 ,300);
+
+    gtk_widget_set_hexpand(music_player_slider, TRUE);
+
+    // Create the play/pause button
+    music_player_play_pause_button = gtk_button_new_with_label("Pause");
+    g_signal_connect(music_player_play_pause_button, "clicked", G_CALLBACK(play_pause_clicked), NULL);
+    //music_player_play_pause_button = GTK_WIDGET(gtk_builder_get_object(builder, "music_player_play_pause_button"));
+    gtk_fixed_put(GTK_FIXED(music_player_fixed), music_player_play_pause_button, 192, 381);
 }
 
 void *audio_parallel_thread(void *arg)
@@ -685,11 +744,6 @@ void *audio_parallel_thread(void *arg)
         SDL_Delay(100);
     }
 
-    //// Clean up resources
-    //Mix_FreeMusic(music);
-    //Mix_CloseAudio();
-    //printf("this is sus!");
-    //SDL_Quit();
     music_is_playing = 0;
     return NULL;
 
@@ -704,17 +758,6 @@ void audioCallback(void *userdata, Uint8 *stream, int len)
 
 gboolean update_music_progress_slider(void *data)
 {
-    //SDL_AudioSpec audioSpec;
-    //SDL_AudioDeviceID audioDevice;
-    //    // Set up the audio specifications
-    //audioSpec.freq = 44100; // Sample rate
-    //audioSpec.format = AUDIO_S16SYS; // 16-bit signed audio
-    //audioSpec.channels = 2; // Stereo
-    //audioSpec.samples = 4096; // Buffer size
-    //audioSpec.callback = audioCallback;
-    //    // Open the audio device
-    //audioDevice = SDL_OpenAudioDevice(NULL, 0, &audioSpec, NULL, 0);
-    //SDL_PauseAudioDevice(audioDevice, 1); //a tiny pause to avoid race conditions
     //if(music_is_playing && !slider_grabbed){
     if(music_is_playing)
     {
@@ -757,30 +800,9 @@ void on_slider_changed(GtkWidget* widget, gpointer data)
         double old_position = Mix_GetMusicPosition(music);
         // Calculate the new position in milliseconds
         double new_position = (double)(slider_value * total_duration);
-        //double timediff = new_position - old_position;
-        //// taking modulus
-        //timediff = (timediff>0) ? timediff : (-timediff);
-        //if(timediff < 1)
-        //{
-        //    printf("old is %lf and new is %lf\n", old_position, new_position);
-        //    printf("the diff is %lf \n", timediff);
-        //    return;
-        //}
-        //else{
-        //    printf("moving cursor \n");
-        //    // Set the music playback position
-        //}
         Mix_SetMusicPosition(new_position);
     }
 }
-//void slider_pressed(GtkRange *range, GtkScrollType scroll, gdouble value, gpointer user_data)
-//{
-//    slider_grabbed = TRUE;
-//}
-//void slider_released(GtkRange *range, GtkScrollType scroll, gdouble value, gpointer user_data)
-//{
-//    slider_grabbed = FALSE;
-//}
 
 void on_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data)
 {
@@ -802,40 +824,8 @@ void on_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColu
         g_print("clicked on file %s\n", clicked_music_filepath);
 
 
-    GtkWidget *music_player_fixed = GTK_WIDGET(gtk_builder_get_object(builder, "no_of_music_files_label"));
-
-    // Create a vertical box to hold the buttons
-    GtkWidget *playbar_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    //GtkWidget *music_player_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    GtkWidget *music_player_window = GTK_WIDGET(gtk_builder_get_object(builder, "music_player_window"));
     gtk_window_set_title(GTK_WINDOW(music_player_window), filename);
 
-    g_signal_connect(music_player_window, "destroy", G_CALLBACK(onDestroy), NULL);
-
-
-    // Create the slider
-    //music_player_slider = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 1, 0.0001);
-    music_player_slider = GTK_WIDGET(gtk_builder_get_object(builder, "music_player_slider"));
-    //gtk_fixed_put(GTK_FIXED(music_player_fixed), music_player_slider, 25, 350);
-    //gtk_container_remove(GTK_CONTAINER(music_player_fixed), music_player_slider);
-    //printf("AAAAAAAAAAAAAAAAAAAA MY MUSIC_SLIDER IS %d\n", GTK_IS_WIDGET(music_player_slider));
-
-    gtk_widget_set_hexpand(music_player_slider, TRUE);
-    //g_signal_connect(music_player_slider, "value-changed", G_CALLBACK(on_slider_changed), NULL);
-    //g_signal_connect(music_player_window, "button-press-event", G_CALLBACK(on_slider_changed), NULL);
-    //g_signal_connect(music_player_window, "button-release-event", G_CALLBACK(slider_released), NULL);
-
-    //gtk_box_pack_start(GTK_BOX(playbar_box), music_player_slider, TRUE, TRUE, 0);
-
-    //gtk_container_add(GTK_CONTAINER(music_player_window), playbar_box);
-
-    // Create the play/pause button
-    //music_player_play_pause_button = gtk_button_new_with_label("Pause");
-    music_player_play_pause_button = GTK_WIDGET(gtk_builder_get_object(builder, "music_player_play_pause_button"));
-    //g_signal_connect(music_player_play_pause_button, "clicked", G_CALLBACK(play_pause_clicked), NULL);
-    //gtk_box_pack_start(GTK_BOX(playbar_box), music_player_play_pause_button, TRUE, TRUE, 0);
-
-    //gtk_container_add(GTK_CONTAINER(music_player_window), music_player_play_pause_button);
     gtk_widget_show_all(music_player_window);
 
 
@@ -923,17 +913,6 @@ void generate_music_files_fixed()
                 sprintf(musicfilepath, "%s\\%s", music_directory, dir->d_name); //adding music filepaths to musicfilepath string
                 music_files_list[musicfileCount] = musicfilepath;//adding music filepath to array of names
 
-                //GtkWidget *button = gtk_button_new();// creating new gtk button
-
-                //g_signal_connect(button, "clicked", G_CALLBACK(a_camera_image_clicked), GINT_TO_POINTER(musicfileCount));// adding signal to button
-
-
-                // gtk_widget_add_css_class(button, "icon_button");
-                //GtkCssProvider *css_provider = gtk_css_provider_new();
-                //gtk_css_provider_load_from_data(css_provider, ".icon_button { background: none; box-shadow: none; border: none;}", -1, NULL);
-                //GtkStyleContext *context = gtk_widget_get_style_context(button);
-                //gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(css_provider),
-                //GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
                 // Attach image to the grid
                 //gtk_grid_attach(GTK_GRID(camera_images_grid), button, (musicfileCount)%5, (musicfileCount)/5, 1, 1);
@@ -956,12 +935,6 @@ void generate_music_files_fixed()
                 g_signal_connect(list_view, "row-activated", G_CALLBACK(on_row_activated), NULL);
 
                 // Add music files to the list store
-                // You can use a file dialog or directory scan to get the music files
-                //printf("music is %s \n", musicfilepath);
-
-                //char *music_file_duration_full[64];
-
-
                 // this modifies duration_full
                 get_music_file_duration(musicfilepath);
 
@@ -969,8 +942,6 @@ void generate_music_files_fixed()
                 GtkTreeIter iter;
                 gtk_list_store_append(list_store, &iter);
                 gtk_list_store_set(list_store, &iter, 0, dir->d_name, 1, duration_full, -1);
-                //gtk_list_store_append(list_store, &iter);
-                //gtk_list_store_set(list_store, &iter, 1, "lund", -1);
 
                 // Add list view to window and show all widgets
                 gtk_fixed_put(GTK_FIXED(music_files_fixed), list_view, 50, 100);
@@ -1009,7 +980,48 @@ void generate_music_files_fixed()
 
 
 
+    // this code has to run only once, so putting it here
 
+
+    music_player_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_default_size(GTK_WINDOW(music_player_window), 450, 450);
+    //music_player_window = GTK_WIDGET(gtk_builder_get_object(builder, "music_player_window"));
+
+    //music_player_fixed = GTK_WIDGET(gtk_builder_get_object(builder, "music_player_fixed"));
+    music_player_fixed = gtk_fixed_new();
+    gtk_container_add(GTK_CONTAINER(music_player_window), GTK_WIDGET(music_player_fixed));
+
+
+    // image
+
+    GtkWidget *music_player_image = gtk_image_new_from_icon_name("audio-x-generic", GTK_ICON_SIZE_BUTTON);
+    gtk_image_set_pixel_size(GTK_IMAGE(music_player_image), 210);
+    gtk_fixed_put(GTK_FIXED(music_player_fixed), music_player_image, 120, 60);
+
+    // box to hold the buttons
+    GtkWidget *playbar_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+
+    g_signal_connect(music_player_window, "destroy", G_CALLBACK(onDestroy), NULL);
+
+
+    // Create the slider
+    //music_player_slider = GTK_WIDGET(gtk_builder_get_object(builder, "music_player_slider"));
+    //music_player_slider_adjustment1 = GTK_ADJUSTMENT(gtk_builder_get_object(builder, "music_player_slider_adjustment1"));
+    music_player_slider = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 1, 0.00000001);
+    gtk_widget_set_size_request(music_player_slider, 400, 80); // slider size
+    gtk_scale_set_digits(GTK_SCALE(music_player_slider), 8); // decimal precision
+    gtk_scale_set_draw_value(GTK_SCALE(music_player_slider), FALSE);
+    g_signal_connect(music_player_slider, "value-changed", G_CALLBACK(on_slider_changed), NULL);
+
+    gtk_fixed_put(GTK_FIXED(music_player_fixed), music_player_slider, 25 ,300);
+
+    gtk_widget_set_hexpand(music_player_slider, TRUE);
+
+    // Create the play/pause button
+    music_player_play_pause_button = gtk_button_new_with_label("Pause");
+    g_signal_connect(music_player_play_pause_button, "clicked", G_CALLBACK(play_pause_clicked), NULL);
+    //music_player_play_pause_button = GTK_WIDGET(gtk_builder_get_object(builder, "music_player_play_pause_button"));
+    gtk_fixed_put(GTK_FIXED(music_player_fixed), music_player_play_pause_button, 192, 381);
 }
 
 void on_music_menu_button1_clicked(GtkWidget *music_menu_button1)
@@ -1018,109 +1030,6 @@ void on_music_menu_button1_clicked(GtkWidget *music_menu_button1)
 
 
     gtk_stack_set_visible_child_name(GTK_STACK(stack), "music_files_scrolled_window");
-}
-void music_menu_add_new_folder_button_clicked()
-{
-    //GtkWidget *dialog = gtk_file_chooser_dialog_new(
-    //    "Select Folder",                                // Dialog title
-    //    GTK_WINDOW(main_window),   // Parent window
-    //    GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,         // Action: Select folder
-    //    "_Cancel", GTK_RESPONSE_CANCEL,                 // Cancel button
-    //    "_Open", GTK_RESPONSE_ACCEPT,                  // Open button
-    //    NULL);                                         // End of arguments
-
-    //// Show the dialog and wait for a response
-    //gint response = gtk_dialog_run(GTK_DIALOG(dialog));
-
-    //// Check the response
-    //gchar *folder_path;
-    //if (response == GTK_RESPONSE_ACCEPT)
-    //{
-    //    // Get the selected folder path
-    //    folder_path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-
-    //    g_print("Selected folder: %s\n", folder_path);
-
-    //    // Free the folder path string
-    //    g_free(folder_path);
-    //}
-    //else
-    //{
-    //    // Destroy the dialog if canceled
-    //    gtk_widget_destroy(dialog);
-    //    return;
-    //}
-
-    //// Destroy the dialog
-    //gtk_widget_destroy(dialog);
-
-    ////gtk_container_remove(GTK_CONTAINER(music_menu_grid), music_menu_add_new_folder_button);
-
-    ////GtkWidget *music_menu_folder_button = gtk_button_new();
-    ////GtkWidget *folder_image = gtk_image_new_from_icon_name("folder", GTK_ICON_SIZE_BUTTON);
-    ////gtk_button_set_image(GTK_BUTTON(music_menu_folder_button), folder_image);
-    ////g_signal_connect(music_menu_folder_button, "clicked", G_CALLBACK(music_menu_folder_button_clicked), folder_path);
-    ////gtk_grid_attach(GTK_GRID(music_menu_grid), music_menu_folder_button, music_menu_folders_number%3, music_menu_folders_number/3, 1, 1);
-
-    ////music_menu_folders_number++;
-
-    ////GtkWidget *susbutton = gtk_button_new_with_label("sussy");
-    ////GtkWidget *sussybutton = gtk_button_new_with_label("sussssyyyeirjeriajlsdkfjaweioruaosidu");
-    ////printf("sus");
-
-    ////GtkWidget *susFixed = gtk_fixed_new();
-    ////GtkWidget *susgrid = gtk_grid_new();
-    ////gtk_fixed_put(GTK_FIXED(susFixed), susbutton, 400, 500);
-    ////gtk_grid_attach(GTK_GRID(susgrid), sussybutton, music_menu_folders_number%3, music_menu_folders_number/3, 1, 1);
-    ////
-    ////gtk_stack_add_named(GTK_STACK(stack), susFixed, "susFixed");
-    ////gtk_stack_set_visible_child_name(GTK_STACK(stack), "susFixed");
-
-
-
-
-
-    //// Create a new folder button with the folder icon
-    //GtkWidget *music_menu_folder_button = gtk_button_new();
-    //GtkWidget *folder_image = gtk_image_new_from_icon_name("folder", GTK_ICON_SIZE_BUTTON);
-    //gtk_button_set_image(GTK_BUTTON(music_menu_folder_button), folder_image);
-
-    //// Connect the folder button to the callback function with the folder path as data
-    //g_signal_connect(music_menu_folder_button, "clicked", G_CALLBACK(music_menu_folder_button_clicked), folder_path);
-
-    //// Add the folder button to the music menu grid
-    //gtk_grid_attach(GTK_GRID(music_menu_grid), music_menu_folder_button, music_menu_folders_number % 3, music_menu_folders_number / 3, 1, 1);
-
-    //music_menu_folders_number++;
-
-    //// Create new buttons for the sus fixed container
-    //GtkWidget *susbutton = gtk_button_new_with_label("sussy");
-    //GtkWidget *sussybutton = gtk_button_new_with_label("sussssyyyeirjeriajlsdkfjaweioruaosidu");
-
-    //// Create a new fixed container and a grid to hold the buttons
-    //susFixed = gtk_fixed_new();
-    //susgrid = gtk_grid_new();
-
-    //// Attach buttons to the grid
-    //gtk_grid_attach(GTK_GRID(susgrid), susbutton, 0, 0, 1, 1);
-    //gtk_grid_attach(GTK_GRID(susgrid), sussybutton, 1, 0, 1, 1);
-
-    //// Add the grid to the fixed container
-    //gtk_container_add(GTK_CONTAINER(susFixed), susgrid);
-    //ADDING ANYTHING TO A FIXED DOES NOT WORK WHEN IT IS CALLED OUTSIDE MAIN() i.e CALLED BY A BUTTON!!!!!!
-
-    //// Add the fixed container to the GtkStack
-    //gtk_stack_add_named(GTK_STACK(stack), susFixed, "susFixed");
-
-    // Set the visible child of the stack to the newly added fixed container
-
-
-
-
-    //gtk_grid_attach(GTK_GRID(music_menu_grid), music_menu_add_new_folder_button, music_menu_folders_number%3, music_menu_folders_number/3, 1, 1);
-        //music_menu_add_new_folder_button_clicked
-    //gtk_widget_show(music_menu_fixed);
-    //gtk_stack_set_visible_child_name(GTK_STACK(stack), "music_menu_scrolled_window");
 }
 
 void music_menu_folder_button_clicked(GtkWidget *music_menu_folder_button, gpointer data)
@@ -2181,7 +2090,7 @@ int alarm_assets_generate()
         SDL_Quit();
         return -1;
     }
-     g_signal_connect(alarm_sound_list, "changed", G_CALLBACK(timer_callback), NULL);
+     //g_signal_connect(alarm_sound_list, "changed", G_CALLBACK(timer_callback), NULL);
 
 
 
@@ -2211,7 +2120,8 @@ int timeDifferenceInSeconds(int wakeHour, int wakeMinute, const char* am_pm, int
 // same varition fo rminute even
     wakeHour = convertTo24Hour(wakeHour, am_pm);
     // to convert the time to 24 -> 12 hour balance system 
-    int wakeTimeInSeconds = (wakeHour + diff_day_code) * 3600 + wakeMinute * 60;
+    //int wakeTimeInSeconds = (wakeHour + diff_day_code) * 3600 + wakeMinute * 60;
+    int wakeTimeInSeconds = (wakeHour) * 3600 + wakeMinute * 60;
     // feature to find difference of time based on the day selected 
     int currentTimeInSeconds = currentHour * 3600 + currentMinute * 60;
 
@@ -2313,17 +2223,11 @@ void on_custom_toggled()
     if (state)
     {
        
-       
         // builder intialized and assigned to its file to read the plugins 
         // builder has function of reading data from the specified file and interpreting the plugins assigned 
 
-        // gtk_builder_add_from_file(builder, "custom_mode.glade", NULL);
-
-
-       
        // connecting the plugins for window destroy command once eiteher the user click cross button or any other 
        // spot of the empty window 
-
         
        //connecting builder to its signl for getting invoked once its required after window intialization 
 
@@ -2446,10 +2350,12 @@ int convertTo24Hour(int hour, const char* am_pm)
         if (hour == 12)
         {
             return 0; // 12 AM is 0 hour
-        } else {
+        }
+        else {
             return hour;
         }
-    } else { // PM
+    }
+    else { // PM
         if (hour == 12)
         {
             return 12; // 12 PM remains 12
@@ -2514,29 +2420,6 @@ gboolean timer_callback(gpointer data)
 
 
     // Construct the filename of the MP3 file
-    // gchar *filename = g_strdup_printf("%s.mp3", selected_sound);
-
-
-
-    // // Load the selected sound file
-    // alarm_music = Mix_LoadMUS(filename);
-    // g_free(filename);
-    // if (!alarm_music)
-    // {
-    //     g_print("Failed to load alarm_music: %s\n", Mix_GetError());
-    //     return FALSE;
-    // }
-
-    
-    
-    // if (Mix_PlayMusic(alarm_music, 0) == -1)
-    // {
-    //     g_print("Failed to play alarm_music: %s\n", Mix_GetError());
-    //     Mix_FreeMusic(alarm_music);
-    //     return FALSE;
-    // } 
-    
-    // SDL_Delay(10000);
     
     return FALSE;
 }
@@ -2611,7 +2494,7 @@ void setAlarm(int seconds, int wakeHour, int wakeMinute, const char *am_pm)
 guint alarm_id = g_timeout_add_seconds(seconds, alarm_callback, NULL);
   return;
 }
-gboolean alarm_callback(gpointer data)
+gboolean alarm_callback()
 {
     // Function to be called when the alarm goes off
     printf("Alarm! Time's up!\n");
@@ -2649,6 +2532,431 @@ void on_clock_custom_back_button_clicked()
     gtk_stack_set_visible_child_name(GTK_STACK(stack), "clock_menu_fixed");
 }
 
+
+// calendar functions ---------------------------------------------------------
+
+void calendar_assets_generate(){
+
+    // Initialise all date buttons
+    int k = 1;
+    for(int i = 1; i < 7; i++){
+        for(int j = 1; j < 8; j++){
+            char buttonname[64];
+            sprintf(buttonname, "r%dc%d",i , j);
+            icon_buttons[k] = GTK_WIDGET(gtk_builder_get_object(builder, buttonname));
+            k++;
+        }
+    }
+
+    // Initialise and setup other buttons and menus
+    editButton = GTK_WIDGET(gtk_builder_get_object(builder, "edit/save_button"));
+    gtk_button_set_label(GTK_BUTTON(editButton), "Edit");
+    gtk_widget_set_sensitive(editButton, false);
+
+    monthName = GTK_COMBO_BOX(gtk_builder_get_object(builder, "month_name"));
+
+    yearName = GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "year_name"));
+
+    currentDate = GTK_WIDGET(gtk_builder_get_object(builder, "currentDateDisplay"));
+
+    dateContents = GTK_WIDGET(gtk_builder_get_object(builder, "dateContents"));
+    gtk_widget_set_sensitive(GTK_WIDGET(dateContents), false);
+    gtk_entry_set_text(GTK_ENTRY(dateContents),"Nothing to display");
+
+    // Set current date and month in label
+    time_t t2 = time(NULL);
+    struct tm tm1 = *localtime(&t2);
+    year = tm1.tm_year + 1900; 
+    monthNum = tm1.tm_mon + 1;
+    set_label_current_date(currentDate);
+
+    // Calendar setup process
+    getData();
+    setCalendar();
+
+    // Setup miscellenous tool and widgets
+    calendar_fixed = GTK_WIDGET(gtk_builder_get_object(builder, "calendar_fixed"));
+    gtk_stack_add_named(GTK_STACK(stack), calendar_fixed, "calendar_fixed");
+
+
+}
+
+// Function to write new content into file
+void write_to_file(char text[200]) {
+    // Open the file in write mode
+    FILE *file = fopen("temp.txt", "w");
+    
+    // Check if file opened successfully
+    if (file != NULL) {
+        // Write the text to the file
+        fprintf(file, "%s", text);
+        const char* originalFileName = "temp.txt";
+        remove(calendar_note_filename);
+        fclose(file);
+        rename(originalFileName, calendar_note_filename);
+    } else {
+        printf("Failed to open file for writing.\n");
+    }
+}
+
+// Functin to print the content for each date in window
+void displayContent() {
+    // Open the file
+    FILE *file = fopen(calendar_note_filename, "r");
+    
+    // Check if the file exists
+    if (file == NULL) {
+        gtk_entry_set_text(GTK_ENTRY(dateContents),"Nothing to display");
+        return;
+    }
+
+    // Find the size of the file
+    fseek(file, 0, SEEK_END);
+    long fileSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // Allocate memory to store the file content
+    char *fileContent = (char *)malloc(fileSize + 1); // +1 for null terminator
+    if (fileContent == NULL) {
+        printf("Memory allocation failed.\n");
+        fclose(file);
+        return;
+    }
+
+    // Read the file content into the allocated memory
+    size_t bytesRead = fread(fileContent, 1, fileSize, file);
+    if (bytesRead != fileSize) {
+        printf("Error reading file.\n");
+        fclose(file);
+        free(fileContent);
+        return;
+    }
+
+    // Null-terminate the string
+    fileContent[fileSize] = '\0';
+
+    // Close the file
+    fclose(file);
+
+    // Print the file content
+    gtk_entry_set_text(GTK_ENTRY(dateContents),fileContent);
+    // Free allocated memory
+    free(fileContent);
+}
+
+// Function to edit content for each date in window
+void editContent(GtkButton *button){
+
+    // Check wether content is to be editted of saved
+    if(check == 0){
+        gtk_button_set_label(GTK_BUTTON(editButton), "Save");
+        gtk_widget_set_sensitive(GTK_WIDGET(dateContents), true);
+        for(int i = 1; i < 43; i++){
+            gtk_widget_set_sensitive(GTK_WIDGET(icon_buttons[i]), false);
+        }
+        check = 1;
+    } else {
+        char buffer[200];
+        const char *text = gtk_entry_get_text(GTK_ENTRY(dateContents));
+        strcpy(buffer, text);
+        write_to_file(buffer);
+        gtk_button_set_label(GTK_BUTTON(editButton), "Edit");
+        gtk_widget_set_sensitive(editButton, false);
+        gtk_entry_set_text(GTK_ENTRY(dateContents),"Nothing to display");
+        gtk_widget_set_sensitive(GTK_WIDGET(dateContents), false);
+        for(int i = 1; i < 43; i++){            
+            gtk_widget_set_sensitive(GTK_WIDGET(icon_buttons[i]), true);
+        }
+        check = 0;
+    }
+}
+
+// Function to set label text with current date
+void set_label_current_date(GtkWidget *label) {
+    // Get current date and time
+    GDateTime *now = g_date_time_new_now_local();
+    
+    // Format date string
+    gchar *formatted_date = g_strdup_printf("%s, %d %s, %d",
+        g_date_time_format(now, "%A"),   // Full weekday name (e.g., "Saturday")
+        g_date_time_get_day_of_month(now), // Day of month (e.g., 20)
+        g_date_time_format(now, "%B"),   // Full month name (e.g., "April")
+        g_date_time_get_year(now));       // Year (e.g., 2024)
+
+    // Set label text
+    gtk_label_set_text(GTK_LABEL(label), formatted_date);
+
+    // Free allocated memory
+    g_date_time_unref(now);
+    g_free(formatted_date);
+}
+
+// Highlight a button
+void set_button_color(GtkWidget *button) {
+    GdkRGBA text_color = {1.0, 0, 0, 1.0}; // Red text
+
+    // Get the label widget of the button
+    GtkWidget *label = gtk_bin_get_child(GTK_BIN(button));
+
+    // Set label text color
+    gtk_widget_override_color(label, GTK_STATE_FLAG_NORMAL, &text_color);
+
+    // Create a PangoAttrList to hold the text attributes
+    PangoAttrList *attr_list = pango_attr_list_new();
+
+    // Create attributes for bold and underline
+    PangoAttribute *attr_bold = pango_attr_weight_new(PANGO_WEIGHT_BOLD);
+    PangoAttribute *attr_underline = pango_attr_underline_new(PANGO_UNDERLINE_SINGLE);
+
+    // Add attributes to the attribute list
+    pango_attr_list_insert(attr_list, attr_bold);
+    pango_attr_list_insert(attr_list, attr_underline);
+
+    // Apply the attribute list to the label widget
+    gtk_label_set_attributes(GTK_LABEL(label), attr_list);
+
+    // Free the attribute list (attributes will be freed when the list is freed)
+    pango_attr_list_unref(attr_list);
+}
+
+// Function to calculate the day of the week
+int dayOfWeek(int day, int month, int year) {
+    if (month < 3) {
+        month += 12;
+        year--;
+    }
+
+    int K = year % 100;
+    int J = year / 100;
+
+    int h = (day + (13 * (month + 1)) / 5 + K + K / 4 + J / 4 - 2 * J) % 7;
+    
+    // Adjust for negative numbers
+    if (h < 0)
+        h += 7;
+
+    return h;
+}
+
+// Function to convert month name to its corresponding number
+int monthToNumber(char* month) {
+    char* months[] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+
+    for (int i = 0; i < 12; ++i) {
+        if (strcasecmp(month, months[i]) == 0) {
+            return i + 1;
+        }
+    }
+
+    return -1;
+}
+
+// Function to check if the string contains only digits
+bool isNumber(const char* str) {
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (!isdigit(str[i])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Function to calculate the first day in each month
+int get_date(int year,int monthNum) {
+
+    // Calculate day of the week for the 1st day of the month
+    int dayIndex = dayOfWeek(1, monthNum, year);
+    
+    // Setting day index of saturday as 7
+    if (dayIndex == 0) {
+        dayIndex = 7;
+    }
+
+    return dayIndex;
+}
+
+// Function to update month in drop down menu when moving forwards or backwards
+void set_dropdown_value_by_index(GtkComboBox *combo_box, gint index) {
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+
+    // Get the model associated with the combo box
+    model = gtk_combo_box_get_model(combo_box);
+
+    // Check if the index is within the valid range of items
+    if (index < 0) {
+        g_print("Invalid index: %d\n", index);
+        return;
+    }
+
+    // Set the active item using the index
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo_box), index);
+}
+
+// Function to update year on screen when moving forwards or backwards
+void set_spinner_value(GtkSpinButton *spinner, gdouble value) {
+    // Ensure spinner is of type GtkSpinButton *
+    g_return_if_fail(GTK_IS_SPIN_BUTTON(spinner));
+
+    // Set the value of the spinner button
+    gtk_spin_button_set_value(spinner, value);
+}
+
+// Function to set the label of the button to the specified date
+void setButtonDate(GtkWidget *button, int date) {
+    char label[3]; 
+    sprintf(label, "%d", date);
+    gtk_button_set_label(GTK_BUTTON(button), label);
+}
+
+
+// Function to get number of days in a given month
+int numberOfDays(int x, int y){
+    int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+    // Compensating for leap years and century leap years
+    if ( y == 2 && x%4 == 0 && x%100!=0){
+        return (days[1]+1);
+    }   
+    return days[(y-1)];
+}
+
+// Function to get basic data required to setip the calendar
+void getData(){
+
+    // Getting first day of month for the current month and year
+    dayIndex = get_date(year,monthNum);
+
+    // Getting number of days in current month
+    NumDays =  numberOfDays(year, monthNum);
+
+    // Getting number of days in previous month
+    if (monthNum == 1){
+        PrevDays = numberOfDays(year, 12);
+    } else {
+        PrevDays = numberOfDays(year, monthNum-1);
+    }
+}
+
+// Function to setup the calendar
+void setCalendar(){
+    // Filling buttons with dates of the specified month
+    for(int i = dayIndex-1; i > 0; i--){
+        setButtonDate(icon_buttons[i], PrevDays--);
+        gtk_widget_set_opacity(GTK_WIDGET(icon_buttons[i]), 0.5);
+    }
+    for(int i = dayIndex; i < dayIndex+NumDays; i++){
+        setButtonDate(icon_buttons[i], i-dayIndex+1);
+        gtk_widget_set_opacity(GTK_WIDGET(icon_buttons[i]), 1.0);
+    }
+    int j = 1;
+    for(int i = dayIndex+NumDays; i < 43; i++){
+        setButtonDate(icon_buttons[i],j++);
+        gtk_widget_set_opacity(GTK_WIDGET(icon_buttons[i]), 0.5);
+    }
+
+    // Setting initial month and year values
+    set_dropdown_value_by_index(monthName,monthNum-1);
+    set_spinner_value(yearName,year);
+
+    // Getting current year and month
+    time_t t2 = time(NULL);
+    struct tm tm1 = *localtime(&t2);
+    int currentyear = tm1.tm_year + 1900; 
+    int currentmonth = tm1.tm_mon + 1; 
+    int day = localtime(&(time_t){time(NULL)})->tm_mday;
+
+    // HIghlighting current day
+    if(year == currentyear && monthNum == currentmonth){
+        set_button_color(icon_buttons[day+1]);
+    }
+}
+
+// Function to check the type of button clicked and aacording select further course of action
+void functionSet(GtkButton *button){
+    char label[20];
+    int num;
+    float opacity;
+
+    // Get opacity of widget to check if current date is clicked or some other month's
+    opacity = gtk_widget_get_opacity(GTK_WIDGET(button));
+
+    if(opacity != 1){
+
+        const gchar *button_label = gtk_button_get_label(GTK_BUTTON(button));
+        strcpy(label, button_label);
+        num = atoi(label);
+
+    // Move the calendar to next month or previous month
+        if(num > 20){
+            if(monthNum==1){
+                monthNum=12;
+                year--;
+            } else {
+                monthNum--;
+            }
+        } else {
+            if(monthNum == 12){
+                monthNum = 1;
+                year++;
+            } else {
+                monthNum++;
+            }
+        }
+
+        getData();
+        setCalendar();  
+
+    } else {
+
+        // Read content of clicked date
+        const gchar *text = gtk_button_get_label(button);
+        int ref = atoi(text);
+        sprintf(calendar_note_filename, "assets/%d_%d_%d.txt", year, monthNum, ref);
+        gtk_widget_set_sensitive(editButton, true);
+
+        displayContent(calendar_note_filename);
+    }
+
+    return;
+}
+
+// Function to set month and update calendar
+void getMonth(GtkComboBox *widget){
+
+    GtkTreeIter iter;
+    GtkTreeModel *model;
+    gchar *selected_value;
+
+    // Get the model associated with the combo box
+    model = gtk_combo_box_get_model(widget);
+
+    // Get the currently selected item from the combo box
+    if (gtk_combo_box_get_active_iter(widget, &iter)) {
+        gtk_tree_model_get(model, &iter, 0, &selected_value, -1);
+        monthNum = monthToNumber(selected_value);
+        g_free(selected_value);
+    }
+
+    getData();
+    setCalendar();
+}
+
+// Function to set year and update calendar
+void getYear(GtkSpinButton *spinner) {
+
+    // Get the currently selected year
+    year = gtk_spin_button_get_value(spinner);
+
+    getData();
+    setCalendar();
+}
+
+void on_calendar_home_button_clicked(){
+
+    gtk_stack_set_visible_child_name(GTK_STACK(stack), "homepage_fixed");
+}
 
 
 /* homepage functions --------------------------------------------- */
@@ -2731,35 +3039,6 @@ void homepage_assets_generate()
     gtk_image_set_from_pixbuf(GTK_IMAGE(homepage_wallpaper), homepage_wallpaper_pix);
 
 
-        //gtk_widget_add_css_class(homepage_fixed, "homepage_wallpaper");
-    //GtkCssProvider *css_provider = gtk_css_provider_new();
-    //const gchar *css_data = "homepage_fixed {background-color: red; background-size: cover; background-repeat: no-repeat;}";
-    //const gchar *css_data = "homepage_fixed {background-image: url(\"assets/homepage_wallpaper.jpg\"); background-size: cover; background-repeat: no-repeat;}";
-      //gtk_css_provider_load_from_string(css_provider, css_data);
-    //gtk_css_provider_load_from_data(css_provider, css_data, -1, NULL);
-    //gtk_css_provider_load_from_path(css_provider, "asdf.css", NULL);
-
-    //GtkStyleContext *context = gtk_widget_get_style_context(homepage_fixed);
-    //gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(css_provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-
-
-
-
-
-    // for (int i = 0; i < fileCount; i++)
-    // {
-    //     // Create image widget from file
-    //     GtkWidget *image = gtk_image_new();
-    //     pixIn_camera_images_grid = gdk_pixbuf_new_from_file(images_list[i], NULL);    // unscaled pixbuf
-    //     pix_camera_images_grid = gdk_pixbuf_scale_simple(pixIn_camera_images_grid, 176, 176, GDK_INTERP_NEAREST); // scaled pixbuf
-    //     gtk_image_set_from_pixbuf(GTK_IMAGE(image), pix_camera_images_grid);
-    // //     // Attach image to the grid
-    //     gtk_grid_attach(GTK_GRID(camera_images_grid), image, i%5, i/5, 1, 1);
-    // }
-
-
-
-
 
 }
 
@@ -2811,7 +3090,7 @@ void on_icon_button3_clicked(GtkWidget *icon_button3)
 }
 void on_icon_button4_clicked(GtkWidget *icon_button4)
 {
-    //gtk_stack_set_visible_child_name(GTK_STACK(stack), "");
+    gtk_stack_set_visible_child_name(GTK_STACK(stack), "calendar_fixed");
 
     printf("button4 clicked \n");
 }

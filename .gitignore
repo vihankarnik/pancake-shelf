@@ -1,1 +1,2 @@
-*.exe
+src/*.exe
+src/assets/*.txt
