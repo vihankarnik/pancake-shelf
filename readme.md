@@ -30,10 +30,6 @@ written completely in C language using GTK3 toolkit and SDL2(for playing music)
 To build on Windows, follow the steps:
 * Recommended to use [MSYS2](https://www.msys2.org/) which provides a Unix-like environment and a command-line interface for compiling and building on Linux software that runs on Windows.
 * Run the `MinGW64` environment that comes with `MSYS2`.
-* Install and set up git:  
-```
-pacman -S git
-
 * Install `gtk3` for the `MINGW64` environment:  
 ```
 pacman -S mingw-w64-x86_64-gtk3
@@ -45,12 +41,11 @@ pacman -S mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_mixer
 * Install `ffmpeg`
 ```
 pacman -S mingw-w64-x86_64-ffmpeg
-
+```
 * Compile b23ph1028_b23cs1048_b23ch1020_b23me1065_main.c
 ```
-
-gcc b23ph1028_b23cs1048_b23ch1020_b23me1065_main.c -o app $(pkg-config --cflags --libs gtk+-3.0) $(pkg-config --cflags --libs SDL2_mixer) -Wl,--export-all-symbols -lavformat -lavcodec -lavutil -lswresample
-
+gcc b23ph1028_b23cs1048_b23ch1020_b23me1065_main.c -o app $(pkg-config --cflags --libs gtk+-3.0) $(pkg-config --cflags --libs SDL2_mixer) -Wno-deprecated-declarations -Wl,--export-all-symbols -lavformat -lavcodec -lavutil -lswresample
+```
 * Run the compiled file:
 ```
 ./app.exe
