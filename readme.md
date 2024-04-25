@@ -22,7 +22,7 @@ written completely in C language using GTK3 toolkit and SDL2(for playing music)
 
 * Gallery app lists all the camera roll images on a grid and can be seen. These images can further be maximized onto new screen by clicking them
 
-*Calender app shows the days of the months and the current date is highlighted. We can add label to dated which gets stored and can be accessed by clicking on the dates. It also provides a menu to go to a certain date
+* Calender app shows the days of the months and the current date is highlighted. We can add label to dated which gets stored and can be accessed by clicking on the dates. It also provides a menu to go to a certain date
 
 * Alarm clock sets the alarm to the set time and rings when time is up
 
