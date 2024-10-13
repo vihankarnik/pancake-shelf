@@ -5,16 +5,14 @@ written completely in C language using GTK3 toolkit and SDL2(for playing music)
   <tr>
     <td style="border: 0;"><img src="Pictures/Picture1.jpg" width="100%"/></td>
     <td style="border: 0;"><img src="Pictures/Picture2.jpg" width="100%"/></td>
-    <td style="border: 0;"><img src="Pictures/Picture3.jpg" width="100%"/></td>
   </tr>
   <tr>
+    <td style="border: 0;"><img src="Pictures/Picture3.jpg" width="100%"/></td>
     <td style="border: 0;"><img src="Pictures/Picture4.jpg" width="100%"/></td>
+  </tr>
+  <tr>
     <td style="border: 0;"><img src="Pictures/Picture5.jpg" width="100%"/></td>
     <td style="border: 0;"><img src="Pictures/Picture6.jpg" width="100%"/></td>
-  </tr>
-  <tr>
-    <td style="border: 0;"><img src="Pictures/Picture7.jpg" width="100%"/></td>
-    <td style="border: 0;"><img src="Pictures/Picture8.jpg" width="100%"/></td>
   </tr>
 </table>
 
