@@ -1,6 +1,22 @@
 # Explorer Application
 A simple user interface containing apps named calender, calculator, music player, alarm clock, gallery and camera 
 written completely in C language using GTK3 toolkit and SDL2(for playing music)
+<table style="width: 100%; border: 0; border-spacing: 0; padding: 0;">
+  <tr>
+    <td style="border: 0;"><img src="Pictures/Picture1.jpg" width="100%"/></td>
+    <td style="border: 0;"><img src="Pictures/Picture2.jpg" width="100%"/></td>
+    <td style="border: 0;"><img src="Pictures/Picture3.jpg" width="100%"/></td>
+  </tr>
+  <tr>
+    <td style="border: 0;"><img src="Pictures/Picture4.jpg" width="100%"/></td>
+    <td style="border: 0;"><img src="Pictures/Picture5.jpg" width="100%"/></td>
+    <td style="border: 0;"><img src="Pictures/Picture6.jpg" width="100%"/></td>
+  </tr>
+  <tr>
+    <td style="border: 0;"><img src="Pictures/Picture7.jpg" width="100%"/></td>
+    <td style="border: 0;"><img src="Pictures/Picture8.jpg" width="100%"/></td>
+  </tr>
+</table>
 
 ### Project overview
 * This project is a user friendly environment providing UI to use applications such as calender, calculator, music player, alarm clock, gallery and camera written completely in C language using GTK3 toolkit
